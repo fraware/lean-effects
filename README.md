@@ -4,9 +4,7 @@
 
 **DSL for Lawvere Theories of Effects in Lean 4**
 
-[![CI/CD Pipeline](https://github.com/fraware/lean-effects/workflows/CI%20Pipeline/badge.svg)](https://github.com/fraware/lean-effects/actions)
 [![Performance Gate](https://github.com/fraware/lean-effects/workflows/Performance%20Gate/badge.svg)](https://github.com/fraware/lean-effects/actions)
-[![Documentation](https://github.com/fraware/lean-effects/workflows/Documentation/badge.svg)](https://lean-effects.github.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 *Algebraic Effects via Lawvere Theories & Handlers with Code Generation, Fusion Theorems, and Curated Simp Packs*
