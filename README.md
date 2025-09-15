@@ -1,5 +1,5 @@
 <div align="center">
-
+ 
 # lean-effects
 
 **DSL for Lawvere Theories of Effects in Lean 4**
