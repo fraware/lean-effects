@@ -1,0 +1,137 @@
+site_name: lean-effects Documentation
+site_description: A production-ready DSL for Lawvere theories of effects in Lean 4
+site_author: lean-effects Team
+site_url: https://lean-effects.github.io
+repo_url: https://github.com/fraware/lean-effects
+repo_name: fraware/lean-effects
+
+docs_dir: .
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+  font:
+    text: Inter
+    code: JetBrains Mono
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.superfences
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.superfences:
+      custom_fences:
+        - name: lean
+          class: lean
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - tables
+  - attr_list
+  - md_in_html
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Basic Usage: getting-started/basic-usage.md
+    - First Example: getting-started/first-example.md
+  - Reference:
+    - DSL Reference: reference/dsl-reference.md
+    - Effect Theories: reference/effect-theories.md
+    - Handlers: reference/handlers.md
+    - Fusion: reference/fusion.md
+  - Standard Library:
+    - State: api/state.md
+    - Reader: api/reader.md
+    - Writer: api/writer.md
+    - Exception: api/exception.md
+    - Nondet: api/nondet.md
+  - Composition:
+    - Sum/Product: composition/sum-product.md
+    - Effect Rows: composition/effect-rows.md
+  - Cookbook:
+    - Common Patterns: cookbook/common-patterns.md
+    - Performance: cookbook/performance.md
+    - Testing: cookbook/testing.md
+    - Production Examples: cookbook/production-examples.md
+  - API Reference:
+    - Core: api/core.md
+    - DSL: api/dsl.md
+    - Tactics: api/tactics.md
+    - Utilities: api/utilities.md
+  - Advanced:
+    - Custom Effects: advanced/custom-effects.md
+    - Proof Automation: advanced/proof-automation.md
+    - Performance Tuning: advanced/performance-tuning.md
+    - Debugging: advanced/debugging.md
+  - Contributing:
+    - Development Guide: contributing/development.md
+    - Code Style: contributing/code-style.md
+    - Testing Guide: contributing/testing.md
+    - Performance Guidelines: contributing/performance.md
+  - Changelog: changelog.md
+  - Migration: migration.md
+
+plugins:
+  - search
+  - git-revision-date-localized
+  - minify:
+      minify_html: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/fraware/lean-effects
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/lean_effects
+  version:
+    provider: mike
+  analytics:
+    provider: google
+    property: G-XXXXXXXXXX

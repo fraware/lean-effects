@@ -1,0 +1,213 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: "0 2 * * *" # Daily at 2 AM UTC
+
+env:
+  LEAN_VERSION: "4.8.0"
+  EFFECTS_TELEMETRY: "true"
+  PERFORMANCE_TIMEOUT_MS: "30000"
+  BENCHMARK_THRESHOLD_MS: "1000"
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        lean-version: ["4.7.0", "4.8.0"]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - lean-version: "4.8.0"
+            os: ubuntu-latest
+            test-coverage: true
+            performance-test: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Lean ${{ matrix.lean-version }}
+        uses: leanprover-community/setup-lean@v1
+        with:
+          lean-version: ${{ matrix.lean-version }}
+
+      - name: Cache Lake dependencies
+        uses: actions/cache@v3
+        with:
+          path: .lake/packages
+          key: ${{ runner.os }}-lake-${{ matrix.lean-version }}-${{ hashFiles('lake-manifest.json') }}
+          restore-keys: |
+            ${{ runner.os }}-lake-${{ matrix.lean-version }}-
+            ${{ runner.os }}-lake-
+
+      - name: Configure Git for certificate handling
+        run: |
+          git config --global http.sslVerify false
+          git config --global http.postBuffer 1048576000
+          git config --global http.maxRequestBuffer 100M
+          git config --global core.compression 0
+
+      - name: Install dependencies
+        run: |
+          export CURL_INSECURE=1
+          lake update
+        env:
+          GIT_SSL_NO_VERIFY: true
+
+      - name: Build project
+        run: lake build
+        env:
+          EFFECTS_TELEMETRY: ${{ env.EFFECTS_TELEMETRY }}
+
+      - name: Run tests
+        run: lake test
+        env:
+          EFFECTS_TELEMETRY: ${{ env.EFFECTS_TELEMETRY }}
+          LEAN_TIMEOUT: ${{ env.PERFORMANCE_TIMEOUT_MS }}
+
+      - name: Run performance benchmarks
+        if: matrix.performance-test
+        run: |
+          lake exe scripts/performance-monitor
+        env:
+          EFFECTS_TELEMETRY: ${{ env.EFFECTS_TELEMETRY }}
+          BENCHMARK_THRESHOLD_MS: ${{ env.BENCHMARK_THRESHOLD_MS }}
+
+      - name: Check for performance regressions
+        if: matrix.performance-test
+        run: |
+          python scripts/check-performance-regression.py
+        env:
+          EFFECTS_TELEMETRY: ${{ env.EFFECTS_TELEMETRY }}
+
+      - name: Generate test coverage report
+        if: matrix.test-coverage
+        run: |
+          lake exe scripts/coverage-report
+        env:
+          EFFECTS_TELEMETRY: ${{ env.EFFECTS_TELEMETRY }}
+
+      - name: Upload coverage reports
+        if: matrix.test-coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  performance-gate:
+    name: Performance Gate
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Lean
+        uses: leanprover-community/setup-lean@v1
+        with:
+          lean-version: ${{ env.LEAN_VERSION }}
+
+      - name: Configure Git for certificate handling
+        run: |
+          git config --global http.sslVerify false
+          git config --global http.postBuffer 1048576000
+          git config --global http.maxRequestBuffer 100M
+          git config --global core.compression 0
+
+      - name: Install dependencies
+        run: |
+          export CURL_INSECURE=1
+          lake update
+        env:
+          GIT_SSL_NO_VERIFY: true
+
+      - name: Run performance benchmarks
+        run: |
+          lake exe scripts/performance-monitor --baseline
+        env:
+          EFFECTS_TELEMETRY: ${{ env.EFFECTS_TELEMETRY }}
+
+      - name: Compare with baseline
+        run: |
+          python scripts/performance-comparison.py --threshold ${{ env.BENCHMARK_THRESHOLD_MS }}
+        env:
+          EFFECTS_TELEMETRY: ${{ env.EFFECTS_TELEMETRY }}
+
+      - name: Fail on performance regression
+        if: failure()
+        run: |
+          echo "::error::Performance regression detected. Build failed."
+          exit 1
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run security scan
+        uses: github/super-linter@v4
+        env:
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_LEAN: true
+
+  build-artifacts:
+    name: Build Artifacts
+    runs-on: ubuntu-latest
+    needs: [test, performance-gate]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Lean
+        uses: leanprover-community/setup-lean@v1
+        with:
+          lean-version: ${{ env.LEAN_VERSION }}
+
+      - name: Configure Git for certificate handling
+        run: |
+          git config --global http.sslVerify false
+          git config --global http.postBuffer 1048576000
+          git config --global http.maxRequestBuffer 100M
+          git config --global core.compression 0
+
+      - name: Install dependencies
+        run: |
+          export CURL_INSECURE=1
+          lake update
+        env:
+          GIT_SSL_NO_VERIFY: true
+
+      - name: Build release
+        run: |
+          lake build
+          lake exe scripts/build-release
+        env:
+          EFFECTS_TELEMETRY: ${{ env.EFFECTS_TELEMETRY }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: lean-effects-${{ github.sha }}
+          path: |
+            build/
+            docs/
+            examples/

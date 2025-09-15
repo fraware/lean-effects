@@ -1,0 +1,197 @@
+name: Performance Monitoring
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 3 * * *" # Daily at 3 AM UTC
+  workflow_dispatch:
+    inputs:
+      baseline:
+        description: "Set as new baseline"
+        required: false
+        default: false
+        type: boolean
+
+env:
+  LEAN_VERSION: "4.8.0"
+  EFFECTS_TELEMETRY: "true"
+  PERFORMANCE_TIMEOUT_MS: "60000"
+  BENCHMARK_THRESHOLD_MS: "1000"
+  REGRESSION_THRESHOLD_PERCENT: "10"
+
+jobs:
+  performance-benchmark:
+    name: Performance Benchmark
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        benchmark-suite: [unit, integration, stress, memory]
+        lean-version: ["4.8.0"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Lean ${{ matrix.lean-version }}
+        uses: leanprover-community/setup-lean@v1
+        with:
+          lean-version: ${{ matrix.lean-version }}
+
+      - name: Cache Lake dependencies
+        uses: actions/cache@v3
+        with:
+          path: .lake/packages
+          key: ${{ runner.os }}-lake-${{ matrix.lean-version }}-${{ hashFiles('lake-manifest.json') }}
+
+      - name: Configure Git for certificate handling
+        run: |
+          git config --global http.sslVerify false
+          git config --global http.postBuffer 1048576000
+          git config --global http.maxRequestBuffer 100M
+          git config --global core.compression 0
+
+      - name: Install dependencies
+        run: |
+          export CURL_INSECURE=1
+          lake update
+        env:
+          GIT_SSL_NO_VERIFY: true
+
+      - name: Build project
+        run: lake build
+        env:
+          EFFECTS_TELEMETRY: ${{ env.EFFECTS_TELEMETRY }}
+
+      - name: Run ${{ matrix.benchmark-suite }} benchmarks
+        run: |
+          lake exe scripts/performance-monitor --suite ${{ matrix.benchmark-suite }} --output results-${{ matrix.benchmark-suite }}.json
+        env:
+          EFFECTS_TELEMETRY: ${{ env.EFFECTS_TELEMETRY }}
+          BENCHMARK_THRESHOLD_MS: ${{ env.BENCHMARK_THRESHOLD_MS }}
+          LEAN_TIMEOUT: ${{ env.PERFORMANCE_TIMEOUT_MS }}
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        with:
+          name: benchmark-results-${{ matrix.benchmark-suite }}-${{ matrix.lean-version }}
+          path: results-${{ matrix.benchmark-suite }}.json
+
+  performance-analysis:
+    name: Performance Analysis
+    runs-on: ubuntu-latest
+    needs: performance-benchmark
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all benchmark results
+        uses: actions/download-artifact@v3
+        with:
+          path: benchmark-results/
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install analysis dependencies
+        run: |
+          pip install pandas matplotlib seaborn numpy scipy
+
+      - name: Run performance analysis
+        run: |
+          python scripts/performance-analysis.py \
+            --input-dir benchmark-results/ \
+            --output-dir analysis-results/ \
+            --threshold ${{ env.REGRESSION_THRESHOLD_PERCENT }} \
+            --baseline ${{ github.event.inputs.baseline == 'true' }}
+        env:
+          EFFECTS_TELEMETRY: ${{ env.EFFECTS_TELEMETRY }}
+
+      - name: Generate performance report
+        run: |
+          python scripts/generate-performance-report.py \
+            --input-dir analysis-results/ \
+            --output performance-report.html
+
+      - name: Upload performance report
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-report-${{ github.sha }}
+          path: |
+            analysis-results/
+            performance-report.html
+
+      - name: Comment PR with performance results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            try {
+              const reportPath = 'analysis-results/performance-summary.json';
+              if (fs.existsSync(reportPath)) {
+                const summary = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+                
+                const comment = `## Performance Analysis Results
+                
+                **Overall Status**: ${summary.status}
+                
+                **Key Metrics**:
+                - Average execution time: ${summary.avg_execution_time}ms
+                - Memory usage: ${summary.memory_usage}MB
+                - Regression detected: ${summary.regression_detected ? 'Yes' : 'No'}
+                
+                **Detailed Results**: [View full report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+                `;
+                
+                github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: comment
+                });
+              }
+            } catch (error) {
+              console.log('Could not post performance comment:', error);
+            }
+
+  performance-gate:
+    name: Performance Gate
+    runs-on: ubuntu-latest
+    needs: performance-analysis
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download performance analysis
+        uses: actions/download-artifact@v3
+        with:
+          name: performance-report-${{ github.sha }}
+          path: analysis-results/
+
+      - name: Check performance gate
+        run: |
+          python scripts/performance-gate.py \
+            --input-dir analysis-results/ \
+            --threshold ${{ env.REGRESSION_THRESHOLD_PERCENT }}
+        env:
+          EFFECTS_TELEMETRY: ${{ env.EFFECTS_TELEMETRY }}
+
+      - name: Fail on performance regression
+        if: failure()
+        run: |
+          echo "::error::Performance regression detected. Build failed."
+          echo "::error::Check the performance report for details."
+          exit 1

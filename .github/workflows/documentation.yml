@@ -1,0 +1,83 @@
+name: Documentation
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "src/**"
+      - "docs/**"
+      - "examples/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "docs/**"
+      - "examples/**"
+
+jobs:
+  build-docs:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Lean
+        uses: leanprover-community/setup-lean@v1
+        with:
+          lean-version: "4.8.0"
+
+      - name: Configure Git for certificate handling
+        run: |
+          git config --global http.sslVerify false
+          git config --global http.postBuffer 1048576000
+          git config --global http.maxRequestBuffer 100M
+          git config --global core.compression 0
+
+      - name: Install dependencies
+        run: |
+          export CURL_INSECURE=1
+          lake update
+          lake build
+        env:
+          GIT_SSL_NO_VERIFY: true
+
+      - name: Generate API documentation
+        run: |
+          lake run scripts/generate-docs.lean
+          python scripts/generate-api-docs.py
+
+      - name: Build documentation site
+        run: |
+          cd docs
+          pip install -r requirements.txt
+          mkdocs build
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/_site
+          cname: lean-effects.github.io
+
+  validate-docs:
+    name: Validate Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check documentation links
+        run: |
+          python scripts/validate-docs.py
+
+      - name: Check for broken examples
+        run: |
+          python scripts/validate-examples.py
+
+      - name: Check documentation completeness
+        run: |
+          python scripts/check-docs.py --strict

@@ -1,0 +1,257 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  release:
+    types: [published]
+
+env:
+  LEAN_VERSION: "4.8.0"
+  LAKE_VERSION: "4.0.0"
+
+jobs:
+  # Build and test on multiple platforms
+  test:
+    name: Test Suite
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        lean-version: ["4.8.0"]
+        exclude: []
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Lean ${{ matrix.lean-version }}
+        uses: leanprover-community/setup-lean@v1
+        with:
+          lean-version: ${{ matrix.lean-version }}
+
+      - name: Configure Git for certificate handling
+        run: |
+          git config --global http.sslVerify false
+          git config --global http.postBuffer 1048576000
+          git config --global http.maxRequestBuffer 100M
+          git config --global core.compression 0
+
+      - name: Install dependencies
+        run: |
+          export CURL_INSECURE=1
+          lake update
+          lake build
+        env:
+          GIT_SSL_NO_VERIFY: true
+
+      - name: Run tests
+        run: |
+          lake test
+          lake run test
+
+      - name: Run benchmarks
+        run: |
+          lake run bench
+
+      - name: Check for performance regressions
+        run: |
+          python scripts/performance-gate.py --threshold 1.1
+
+      - name: Generate test coverage report
+        run: |
+          lake run scripts/coverage-report.lean
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.os }}-lean-${{ matrix.lean-version }}
+          path: |
+            .lake/build/
+            test-results/
+            coverage-report/
+
+  # Performance benchmarking and regression detection
+  performance:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Lean
+        uses: leanprover-community/setup-lean@v1
+        with:
+          lean-version: ${{ env.LEAN_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          lake update
+          lake build
+
+      - name: Run performance benchmarks
+        run: |
+          lake run bench
+          python scripts/performance-analysis.py --output performance-report.json
+
+      - name: Compare with baseline
+        run: |
+          python scripts/performance-comparison.py --current performance-report.json --baseline baseline-performance.json
+
+      - name: Upload performance report
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report
+          path: performance-report.json
+
+  # Code quality and linting
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Lean
+        uses: leanprover-community/setup-lean@v1
+        with:
+          lean-version: ${{ env.LEAN_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          lake update
+          lake build
+
+      - name: Check for sorry statements
+        run: |
+          if grep -r "sorry" src/ tests/ examples/; then
+            echo "❌ Found sorry statements in production code"
+            exit 1
+          fi
+
+      - name: Check for TODO/FIXME in production code
+        run: |
+          if grep -r "TODO\|FIXME" src/; then
+            echo "❌ Found TODO/FIXME in production code"
+            exit 1
+          fi
+
+      - name: Validate all proofs compile
+        run: |
+          lake build --verbose
+
+      - name: Check documentation completeness
+        run: |
+          python scripts/check-docs.py
+
+  # Security scanning
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run security scan
+        uses: github/super-linter@v4
+        env:
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_ALL_CODEBASE: true
+          VALIDATE_LEAN: true
+
+  # Documentation generation
+  docs:
+    name: Generate Documentation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Lean
+        uses: leanprover-community/setup-lean@v1
+        with:
+          lean-version: ${{ env.LEAN_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          lake update
+          lake build
+
+      - name: Generate documentation
+        run: |
+          lake run scripts/generate-docs.lean
+          python scripts/generate-api-docs.py
+
+      - name: Deploy documentation
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/_site
+          cname: lean-effects.github.io
+
+  # Release automation
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [test, performance, lint, security]
+    if: github.event_name == 'release'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Lean
+        uses: leanprover-community/setup-lean@v1
+        with:
+          lean-version: ${{ env.LEAN_VERSION }}
+
+      - name: Build release
+        run: |
+          lake build
+          lake run scripts/build-release.lean
+
+      - name: Create release archive
+        run: |
+          tar -czf lean-effects-${{ github.event.release.tag_name }}.tar.gz \
+            --exclude='.git' \
+            --exclude='.lake' \
+            --exclude='.github' \
+            --exclude='*.md' \
+            .
+
+      - name: Upload release assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./lean-effects-${{ github.event.release.tag_name }}.tar.gz
+          asset_name: lean-effects-${{ github.event.release.tag_name }}.tar.gz
+          asset_content_type: application/gzip
+
+  # Notification on failure
+  notify:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [test, performance, lint, security, docs]
+    if: failure()
+
+    steps:
+      - name: Notify maintainers
+        run: |
+          echo "CI/CD pipeline failed. Please check the logs."
+          # Add notification logic here (Slack, email, etc.)

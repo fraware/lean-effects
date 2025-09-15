@@ -1,0 +1,69 @@
+name: Performance Gate
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  performance-gate:
+    name: Performance Gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Lean
+        uses: leanprover-community/setup-lean@v1
+        with:
+          lean-version: "4.8.0"
+
+      - name: Configure Git for certificate handling
+        run: |
+          git config --global http.sslVerify false
+          git config --global http.postBuffer 1048576000
+          git config --global http.maxRequestBuffer 100M
+          git config --global core.compression 0
+
+      - name: Install dependencies
+        run: |
+          export CURL_INSECURE=1
+          lake update
+          lake build
+        env:
+          GIT_SSL_NO_VERIFY: true
+
+      - name: Run performance benchmarks
+        run: |
+          lake run bench
+          python scripts/performance-gate.py --threshold 1.05 --fail-on-regression
+
+      - name: Comment PR with performance results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const performanceData = fs.readFileSync('performance-results.json', 'utf8');
+            const results = JSON.parse(performanceData);
+
+            const comment = `## Performance Gate Results
+
+            | Benchmark | Current | Baseline | Change |
+            |-----------|---------|----------|--------|
+            ${results.benchmarks.map(b => 
+              `| ${b.name} | ${b.current}ms | ${b.baseline}ms | ${b.change > 0 ? '🔴' : '🟢'} ${b.change.toFixed(2)}% |`
+            ).join('\n')}
+
+            ${results.regressions.length > 0 ? 
+              '❌ **Performance regression detected!** Please optimize before merging.' : 
+              '✅ **Performance within acceptable limits.**'
+            }`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
