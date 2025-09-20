@@ -16,6 +16,11 @@ lean_lib «Tests» where
   srcDir := "tests"
   -- add library configuration options here
 
+-- Main executable
+lean_exe «lean-effects» where
+  root := `Main
+  supportInterpreter := true
+
 -- Benchmark target
 lean_exe «Bench» where
   root := `Bench

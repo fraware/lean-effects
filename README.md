@@ -42,7 +42,54 @@
 - **Performance**: Deterministic, byte-stable proofs with bounded search
 - **CI/CD**: Comprehensive testing, performance gates, and automated deployment
 
-## Quick Start
+## Quickstart
+
+### One-Command Install & Run
+
+**Using Docker (Recommended)**
+
+```bash
+# Run the help command
+docker run --rm ghcr.io/fraware/lean-effects:latest --help
+
+# Run a quick demo
+docker run --rm ghcr.io/fraware/lean-effects:latest demo
+
+# Validate installation
+docker run --rm ghcr.io/fraware/lean-effects:latest validate
+```
+
+**Using Lake (Lean Package Manager)**
+
+```bash
+# Add to your lakefile.lean
+require leanEffects from git "https://github.com/fraware/lean-effects.git"
+
+# Then in your Lean files
+import Effects
+```
+
+**Local Development**
+
+```bash
+# Clone and set up
+git clone https://github.com/fraware/lean-effects.git
+cd lean-effects
+
+# On Unix/Linux/macOS
+make dev
+
+# On Windows
+make.bat dev
+
+# Run locally
+make run        # Unix/Linux/macOS
+make.bat run    # Windows
+
+# Run demo and examples
+make demo       # Unix/Linux/macOS
+make.bat demo   # Windows
+```
 
 ### Basic Usage
 
@@ -144,6 +191,24 @@ Add to your `lakefile.lean`:
 ```lean
 require lean-effects from git "https://github.com/fraware/lean-effects.git"
 ```
+
+### Development with Makefile
+
+The project includes a comprehensive Makefile for development automation:
+
+```bash
+make dev       # Set up local development environment
+make run       # Run the CLI locally
+make test      # Run the test suite
+make demo      # Run a demonstration
+make build     # Build the project
+make clean     # Clean build artifacts
+make release   # Build release artifacts
+make docker-build  # Build Docker image
+make docker-run    # Run via Docker
+```
+
+Run `make help` to see all available targets.
 
 ## Usage
 

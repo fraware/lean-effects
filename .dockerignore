@@ -1,0 +1,48 @@
+# Docker ignore file for lean-effects
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Lake build artifacts
+.lake/
+build/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Scripts
+scripts/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Docker files
+Dockerfile
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Development files
+Makefile
+*.local
+*.dev
