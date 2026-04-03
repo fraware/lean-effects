@@ -292,7 +292,7 @@ macro "telemetry_benchmark_end" name:str duration:term memory:term : command => 
 
 -- Initialize telemetry on module load
 def initializeTelemetryFromEnv : IO Unit := do
-  let enabled := (← IO.getEnv "EFFECTS_TELEMETRY").getD "true" == "true"
+  let enabled := (← IO.getEnv "EFFECTS_TELEMETRY").getD "false" == "true"
   let outputFile := (← IO.getEnv "EFFECTS_TELEMETRY_OUTPUT").getD "effects-telemetry.json"
   let collectMemory := (← IO.getEnv "EFFECTS_TELEMETRY_MEMORY").getD "true" == "true"
   let collectTiming := (← IO.getEnv "EFFECTS_TELEMETRY_TIMING").getD "true" == "true"

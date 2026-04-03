@@ -41,7 +41,7 @@ echo Setting up lean-effects development environment...
 echo Checking Lean toolchain...
 lean --version
 if errorlevel 1 (
-    echo Lean not found. Please install Lean 4.8.0+
+    echo Lean not found. Install elan and use lean-toolchain from this repo.
     goto end
 )
 echo Updating dependencies...
@@ -86,10 +86,12 @@ lake exe lean-effects validate
 goto end
 
 :test
-echo Running lean-effects test suite...
+echo Building proof tests - Lake library Tests ...
 lake build
-lake test
-echo All tests passed!
+lake build Tests
+echo Running IO smoke tests...
+lake exe test-suite
+echo Tests completed!
 goto end
 
 :clean

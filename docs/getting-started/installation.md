@@ -2,72 +2,63 @@
 
 ## Prerequisites
 
-- Lean 4.8.0 or later
-- Lake package manager
-- Git
+- **Git**
+- **[elan](https://github.com/leanprover/elan)** (recommended) so Lean matches [`lean-toolchain`](https://github.com/fraware/lean-effects/blob/main/lean-toolchain)
+- **Python 3** (only to build the documentation site)
 
-## Quick Start
+The Lean version is the one named in `lean-toolchain`, with Mathlib at a compatible tag in `Lakefile.lean`.
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/fraware/lean-effects.git
-   cd lean-effects
-   ```
+## Clone and build
 
-2. **Install dependencies:**
-   ```bash
-   lake update
-   ```
+```bash
+git clone https://github.com/fraware/lean-effects.git
+cd lean-effects
+lake update
+lake build
+```
 
-3. **Build the project:**
-   ```bash
-   lake build
-   ```
+`lake build` compiles the library, everything in `tests/`, benchmarks, the `lean-effects` program, and the Lean scripts registered in the Lake file.
 
-4. **Run tests:**
-   ```bash
-   lake test
-   ```
+## Check tests
 
-## Using as a Dependency
+```bash
+lake build Tests
+lake exe test-suite
+```
 
-Add to your `lakefile.lean`:
+## Use as a dependency
+
+In your `lakefile.lean`:
 
 ```lean
 require lean-effects from git
   "https://github.com/fraware/lean-effects.git" @ "main"
 ```
 
-## Troubleshooting
+Pin a branch, tag, or commit that suits your project. Then:
 
-### Certificate Issues
-
-If you encounter certificate verification errors during dependency installation:
-
-```bash
-git config --global http.sslVerify false
-export CURL_INSECURE=1
-export GIT_SSL_NO_VERIFY=true
-lake update
+```lean
+import Effects
 ```
 
-### ProofWidgets Issues
+## Documentation site (local)
 
-If ProofWidgets fails to download, this is a known issue with certificate revocation checks. The CI/CD pipeline handles this automatically, but for local development, you may need to work around this issue.
+```bash
+pip install -r docs/requirements.txt
+cd docs
+mkdocs serve
+```
 
-## Development Setup
+## Troubleshooting
 
-For contributing to lean-effects:
+### Downloads during `lake update`
 
-1. Fork the repository
-2. Clone your fork
-3. Install development dependencies:
-   ```bash
-   lake update
-   pip install -r docs/requirements.txt
-   ```
-4. Build and test:
-   ```bash
-   lake build
-   lake test
-   ```
+Some steps fetch files from GitHub. If that fails (corporate network, Docker, and so on), try passing a GitHub token as described in [CONTRIBUTING.md](https://github.com/fraware/lean-effects/blob/main/CONTRIBUTING.md) and in the `Dockerfile` `GITHUB_TOKEN` build argument.
+
+### TLS / certificates
+
+Do not turn off HTTPS verification as a routine fix. Adjust trust store or proxy settings instead.
+
+## See also
+
+- [CONTRIBUTING.md](https://github.com/fraware/lean-effects/blob/main/CONTRIBUTING.md)

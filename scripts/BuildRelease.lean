@@ -1,5 +1,4 @@
 -- Release build script for lean-effects
--- Creates production-ready release artifacts
 
 import Lean
 import Lean.Elab.Command
@@ -70,7 +69,7 @@ def getCurrentTime : IO String := do
 -- Calculate file checksum
 def calculateChecksum (filePath : String) : IO String := do
   let content ← IO.FS.readFile filePath
-  -- Simple checksum implementation (in production, use proper hash)
+  -- Simple checksum placeholder (not cryptographic)
   let checksum := content.foldl (fun acc c => acc + c.toNat) 0
   return s!"{checksum}"
 
@@ -143,8 +142,7 @@ def buildDocArtifacts (config : ReleaseConfig) (outputDir : String) : IO (List R
   if config.includeDocs then
     -- Copy documentation files
     let docFiles := [
-      "README.md",
-      "PRODUCTION_IMPLEMENTATION_STATUS.md"
+      "README.md"
     ]
 
     for file in docFiles do
@@ -226,14 +224,16 @@ def buildScriptArtifacts (config : ReleaseConfig) (outputDir : String) : IO (Lis
 
   -- Copy script files
   let scriptFiles := [
-    "scripts/performance-monitor.lean",
+    "scripts/PerformanceMonitor.lean",
     "scripts/performance-analysis.py",
     "scripts/performance-gate.py",
     "scripts/check-performance-regression.py",
     "scripts/performance-comparison.py",
     "scripts/generate-performance-report.py",
-    "scripts/coverage-report.lean",
-    "scripts/build-release.lean"
+    "scripts/CoverageReport.lean",
+    "scripts/BuildRelease.lean",
+    "scripts/GenerateDocs.lean",
+    "scripts/TestSuite.lean"
   ]
 
   for file in scriptFiles do
@@ -337,6 +337,3 @@ def main (args : List String) : IO Unit := do
   generateReleaseSummary manifest
 
   IO.println "Release build completed successfully."
-
--- Entry point
-#eval main (← IO.getArgs)

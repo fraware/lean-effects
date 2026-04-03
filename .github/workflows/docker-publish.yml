@@ -51,21 +51,24 @@ jobs:
           type=sha,prefix={{branch}}-
           type=raw,value=latest,enable={{is_default_branch}}
 
-    - name: Build Docker image
+    - name: Build Docker image (load locally for tests)
       uses: docker/build-push-action@v5
       with:
         context: .
         push: false
-        tags: ${{ steps.meta.outputs.tags }}
+        load: true
+        tags: lean-effects:ci
         labels: ${{ steps.meta.outputs.labels }}
+        build-args: |
+          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
     - name: Test Docker image
       run: |
-        docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} --help
-        docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} validate
-        docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} version
+        docker run --rm lean-effects:ci --help
+        docker run --rm lean-effects:ci validate
+        docker run --rm lean-effects:ci version
 
     - name: Push Docker image
       if: github.event_name != 'pull_request'
@@ -75,6 +78,8 @@ jobs:
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+        build-args: |
+          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 

@@ -19,7 +19,9 @@ env:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -36,12 +38,14 @@ jobs:
 
     - name: Update dependencies
       run: lake update
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build project
-      run: lake build --release
+      run: lake build
 
-    - name: Run tests
-      run: lake test
+    - name: Verify test library
+      run: lake build Tests
 
     - name: Test CLI
       run: |

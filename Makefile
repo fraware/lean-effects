@@ -32,7 +32,7 @@ help:
 dev:
 	@echo "🔧 Setting up lean-effects development environment..."
 	@echo "Checking Lean toolchain..."
-	@lean --version || (echo "❌ Lean not found. Please install Lean 4.8.0+"; exit 1)
+	@lean --version || (echo "❌ Lean not found. Install elan and use lean-toolchain from this repo."; exit 1)
 	@echo "Updating dependencies..."
 	@lake update
 	@echo "Building project..."
@@ -69,11 +69,13 @@ validate: build
 	@echo "🔍 Validating lean-effects installation..."
 	@lake exe lean-effects validate
 
-# Run the test suite
+# Run the test suite (proofs via `Tests` library + optional IO smoke tests)
 test: build
-	@echo "🧪 Running lean-effects test suite..."
-	@lake test
-	@echo "✅ All tests passed!"
+	@echo "🧪 Building proof tests (Lake library Tests)..."
+	@lake build Tests
+	@echo "🧪 Running IO smoke tests..."
+	@lake exe test-suite
+	@echo "✅ Tests completed!"
 
 # Clean build artifacts
 clean:
@@ -96,7 +98,7 @@ install: build
 # Build release artifacts
 release: clean
 	@echo "🚢 Building release artifacts..."
-	@lake build --release
+	@lake build
 	@mkdir -p dist
 	@cp .lake/build/bin/lean-effects dist/
 	@cp README.md dist/
@@ -130,7 +132,7 @@ format:
 
 lint: build
 	@echo "🔍 Running linter..."
-	@lake build --release 2>&1 | grep -E "(warning|error)" || echo "✅ No linting issues found"
+	@lake build 2>&1 | grep -E "(warning|error)" || echo "✅ No linting issues found"
 
 # Performance targets
 bench: build
@@ -173,7 +175,7 @@ status:
 	@echo "📊 lean-effects project status:"
 	@echo "Lean toolchain: $$(cat lean-toolchain)"
 	@echo "Build status: $$(lake build > /dev/null 2>&1 && echo '✅ OK' || echo '❌ Failed')"
-	@echo "Test status: $$(lake test > /dev/null 2>&1 && echo '✅ OK' || echo '❌ Failed')"
+	@echo "Test status: $$(lake build Tests > /dev/null 2>&1 && echo '✅ OK' || echo '❌ Failed')"
 	@echo "Files:"
 	@find src -name "*.lean" | wc -l | xargs echo "  Source files:"
 	@find tests -name "*.lean" | wc -l | xargs echo "  Test files:"

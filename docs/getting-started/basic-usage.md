@@ -1,8 +1,11 @@
 # Basic Usage
 
+!!! note "Snippets"
+    The `theory` / `derive_effect` examples are sketches. For code that matches this repo exactly, use [`examples/BasicExample.lean`](https://github.com/fraware/lean-effects/blob/main/examples/BasicExample.lean) and `import Effects`.
+
 ## Introduction
 
-lean-effects provides a DSL for defining algebraic effects and their handlers. This guide covers the basic concepts and usage patterns.
+lean-effects provides a DSL for defining algebraic effects and their handlers. This guide covers basic concepts and usage patterns.
 
 ## Core Concepts
 
@@ -35,7 +38,7 @@ This generates:
 ### Basic Example
 
 ```lean
-import Effects.Std
+import Effects
 
 -- Define a simple state effect
 theory Counter where
@@ -60,70 +63,51 @@ def runCounter (init : Nat) : Counter.Free α → α × Nat :=
 
 ### State Effect
 
-```lean
-import Effects.Std
+The shipped API uses explicit type arguments on operations (see [`Effects.Std.State`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Std/State.lean)):
 
--- State with type parameter
+```lean
+import Effects
+
 def myProgram : State.Free Nat String := do
-  let current ← State.get
-  State.put (current + 1)
-  return s!"Count is {current}"
+  let current ← State.get Nat
+  State.put Nat (current + 1)
+  pure s!"Count is {current}"
 ```
 
 ### Reader Effect
 
 ```lean
--- Reader with environment type
-def myReaderProgram : Reader.Free String Int := do
-  let env ← Reader.ask
-  return env.length
+import Effects
+
+def myReaderProgram : Reader.Free Nat Nat := do
+  let env ← Reader.ask Nat
+  pure (env + 1)
 ```
 
 ### Writer Effect
 
+Writer uses a monoid on the log type `ω` (for example `String` with concatenation):
+
 ```lean
--- Writer with monoid
-def myWriterProgram : Writer.Free (List String) Unit := do
-  Writer.tell ["Starting computation"]
-  Writer.tell ["Processing data"]
-  Writer.tell ["Finished"]
+import Effects
+
+def myWriterProgram : Writer.Free String Unit := do
+  Writer.tell String "Starting computation"
+  Writer.tell String "Finished"
 ```
 
 ### Exception Effect
 
 ```lean
--- Exception handling
-def myExceptionProgram : Exception.Free String Int := do
-  let result ← Exception.throw "Something went wrong"
-  return result
+import Effects
+
+def myExceptionProgram : Exception.Free String Nat :=
+  Exception.throw String "Something went wrong"
 ```
 
 ## Composition
 
-### Sum of Effects
-
-```lean
-def StateWithException := SumTheory State Exception
-
-def combinedProgram : StateWithException.Free Nat String := do
-  let current ← State.get
-  if current > 10 then
-    Exception.throw "Too large"
-  else
-    State.put (current + 1)
-    return "OK"
-```
-
-### Product of Effects
-
-```lean
-def ReaderWithWriter := ProdTheory Reader Writer
-
-def loggedReaderProgram : ReaderWithWriter.Free String Int := do
-  let env ← Reader.ask
-  Writer.tell ["Processing environment"]
-  return env.length
-```
+Sum and product constructions are in [`Effects.Compose.Sum`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Compose/Sum.lean) and [`Effects.Compose.Product`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Compose/Product.lean). Generated client code for combined theories appears under [`tests/Combo/`](https://github.com/fraware/lean-effects/tree/main/tests/Combo) (for example `StateExceptionTest`, `ReaderWriterTest`). Prefer those modules over copying long snippets here, since types and namespaces track the DSL output closely.
 
 ## Next Steps
 

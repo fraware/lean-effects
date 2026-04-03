@@ -1,62 +1,43 @@
-# lean-effects Documentation
+# lean-effects documentation
 
-Welcome to the comprehensive documentation for lean-effects, a production-ready DSL for Lawvere theories of effects in Lean 4.
+**lean-effects** is a Lean 4 library for algebraic effects: theories, free monads, handlers, and supporting tactics. Start Lean files with `import Effects`.
 
-## Quick Start
+## Toolchain
 
-- [Installation Guide](getting-started/installation.md)
-- [Basic Usage](getting-started/basic-usage.md)
-- [First Example](getting-started/first-example.md)
+Lean and Mathlib are locked to versions that work together:
 
-## Core Concepts
+- [`lean-toolchain`](https://github.com/fraware/lean-effects/blob/main/lean-toolchain)
+- Mathlib in [`Lakefile.lean`](https://github.com/fraware/lean-effects/blob/main/Lakefile.lean)
 
-- [DSL Reference](reference/dsl-reference.md) - Complete syntax and semantics
-- [Effect Theories](reference/effect-theories.md) - Understanding algebraic effects
-- [Handlers](reference/handlers.md) - Effect handlers and their properties
-- [Fusion](reference/fusion.md) - Fusion theorems and optimization
+[elan](https://github.com/leanprover/elan) is the usual way to match those versions locally.
 
-## Standard Library
+## Quick start
 
-- [State Effect](api/state.md) - Mutable state management
-- [Reader Effect](api/reader.md) - Read-only environment
-- [Writer Effect](api/writer.md) - Logging and output
-- [Exception Effect](api/exception.md) - Error handling
-- [Nondet Effect](api/nondet.md) - Non-deterministic computation
+1. [Installation](getting-started/installation.md)
+2. [Basic usage](getting-started/basic-usage.md)
+3. [First example](getting-started/first-example.md)
 
-## Composition
+## Pages in this site
 
-- [Theory Composition](composition/sum-product.md) - Combining effects
-- [Effect Rows](composition/effect-rows.md) - Advanced composition patterns
+| Topic | Page |
+|-------|------|
+| DSL | [DSL reference](reference/dsl-reference.md) |
+| Core types | [Core API](api/core.md) |
+| Patterns | [Common patterns](cookbook/common-patterns.md) |
 
-## Cookbook
+The library source is under [`src/Effects/`](https://github.com/fraware/lean-effects/tree/main/src/Effects).
 
-- [Common Patterns](cookbook/common-patterns.md)
-- [Performance Optimization](cookbook/performance.md)
-- [Testing Effects](cookbook/testing.md)
-- [Production Examples](cookbook/production-examples.md)
+## Building and testing
 
-## API Reference
+- `lake build` — main library, tests, benchmarks, CLI, and scripts.
+- `lake build Tests` — all modules in [`tests/`](https://github.com/fraware/lean-effects/tree/main/tests) (entry: [`tests/Tests.lean`](https://github.com/fraware/lean-effects/blob/main/tests/Tests.lean)).
+- `lake exe test-suite` — optional extra checks.
+- `lake exe Bench` — benchmarks.
 
-- [Core API](api/core.md)
-- [DSL API](api/dsl.md)
-- [Tactics](api/tactics.md)
-- [Utilities](api/utilities.md)
+Documentation site: install [`requirements.txt`](https://github.com/fraware/lean-effects/blob/main/docs/requirements.txt), then from `docs/` run `mkdocs build` or `mkdocs serve`.
 
-## Advanced Topics
+See [CONTRIBUTING.md](https://github.com/fraware/lean-effects/blob/main/CONTRIBUTING.md) for versioning, telemetry, and Docker.
 
-- [Custom Effects](advanced/custom-effects.md)
-- [Proof Automation](advanced/proof-automation.md)
-- [Performance Tuning](advanced/performance-tuning.md)
-- [Debugging](advanced/debugging.md)
+## Editing these docs
 
-## Contributing
-
-- [Development Guide](contributing/development.md)
-- [Code Style](contributing/code-style.md)
-- [Testing Guide](contributing/testing.md)
-- [Performance Guidelines](contributing/performance.md)
-
-## Changelog
-
-- [Version History](changelog.md)
-- [Migration Guide](migration.md)
+Add new `.md` files under `docs/` and list them in [`mkdocs.yml`](https://github.com/fraware/lean-effects/blob/main/docs/mkdocs.yml).

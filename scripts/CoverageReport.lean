@@ -273,6 +273,3 @@ def main (args : List String) : IO Unit := do
   saveCoverageReport report config
 
   IO.println "Coverage analysis completed."
-
--- Entry point
-#eval main (← IO.getArgs)

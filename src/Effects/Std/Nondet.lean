@@ -18,7 +18,7 @@ instance : Functor NondetSig where
     | .empty => .empty
     | .choice x y => .choice (f x) (f y)
 
--- Nondet theory definition according to the production spec
+-- Nondet theory definition for the bundled DSL
 def NondetTheory : Theory where
   name := "Nondet"
   params := []

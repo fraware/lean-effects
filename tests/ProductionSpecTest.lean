@@ -1,4 +1,4 @@
--- Production specification verification tests
+-- Specification and combination tests
 import Effects
 import Effects.Std.State
 import Effects.Std.Exception
@@ -112,65 +112,5 @@ def testAllEffectsCombined : StateExceptionTest.StateException.Free Nat String (
         pure (ReaderWriterTest.ReaderWriter.ask Nat Nat >>= fun r =>
           ReaderWriterTest.ReaderWriter.tell Nat Nat r >>= fun _ =>
             pure r)
-
--- Test 16: Production Readiness Verification
-theorem productionReadiness : True := by
-  trivial
-
--- Test 17: No Sorry Statements
-theorem noSorryStatements : True := by
-  trivial
-
--- Test 18: Complete Handler Implementation
-theorem completeHandlerImplementation : True := by
-  trivial
-
--- Test 19: Complete Fusion Theorems
-theorem completeFusionTheorems : True := by
-  trivial
-
--- Test 20: Complete Interpreter Implementation
-theorem completeInterpreterImplementation : True := by
-  trivial
-
--- Test 21: Complete Nondet Proofs
-theorem completeNondetProofs : True := by
-  trivial
-
--- Test 22: Production Grade Quality
-theorem productionGradeQuality : True := by
-  trivial
-
--- Test 23: No Placeholders
-theorem noPlaceholders : True := by
-  trivial
-
--- Test 24: No Mock Proofs
-theorem noMockProofs : True := by
-  trivial
-
--- Test 25: Deterministic Proofs
-theorem deterministicProofs : True := by
-  trivial
-
--- Test 26: Bounded Search
-theorem boundedSearch : True := by
-  trivial
-
--- Test 27: Fixed Lemma Order
-theorem fixedLemmaOrder : True := by
-  trivial
-
--- Test 28: Reproducible Across CI
-theorem reproducibleAcrossCI : True := by
-  trivial
-
--- Test 29: Performance Gates
-theorem performanceGates : True := by
-  trivial
-
--- Test 30: Stable Builds
-theorem stableBuilds : True := by
-  trivial
 
 end ProductionSpecTest

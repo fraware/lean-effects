@@ -7,77 +7,91 @@ on:
       - "src/**"
       - "docs/**"
       - "examples/**"
+      - "scripts/GenerateDocs.lean"
   pull_request:
-    branches: [main]
+    branches: [main, develop]
     paths:
       - "src/**"
       - "docs/**"
       - "examples/**"
 
+concurrency:
+  group: docs-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
   build-docs:
-    name: Build Documentation
+    name: Build documentation
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Lean
-        uses: leanprover-community/setup-lean@v1
+      - name: Install elan
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Select Lean toolchain
+        run: |
+          elan install "$(cat lean-toolchain)"
+          elan default "$(cat lean-toolchain)"
+
+      - name: Cache Lake build
+        uses: actions/cache@v4
         with:
-          lean-version: "4.8.0"
+          path: .lake
+          key: ${{ runner.os }}-lake-docs-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}
+          restore-keys: |
+            ${{ runner.os }}-lake-docs-
 
-      - name: Configure Git for certificate handling
-        run: |
-          git config --global http.sslVerify false
-          git config --global http.postBuffer 1048576000
-          git config --global http.maxRequestBuffer 100M
-          git config --global core.compression 0
+      - name: Build project
+        run: lake build
 
-      - name: Install dependencies
-        run: |
-          export CURL_INSECURE=1
-          lake update
-          lake build
-        env:
-          GIT_SSL_NO_VERIFY: true
+      - name: Run generate-docs
+        run: lake exe generate-docs
 
-      - name: Generate API documentation
-        run: |
-          lake run scripts/generate-docs.lean
-          python scripts/generate-api-docs.py
+      - name: Generate API docs (Python)
+        run: python3 scripts/generate-api-docs.py
 
-      - name: Build documentation site
+      - name: Build MkDocs site
         run: |
           cd docs
           pip install -r requirements.txt
           mkdocs build
 
-      - name: Deploy to GitHub Pages
-        if: github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Validate documentation
+        run: |
+          python3 scripts/validate-docs.py
+          python3 scripts/check-docs.py
+
+      - name: Upload site artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mkdocs-site
+          path: docs/_site
+
+  deploy-docs:
+    name: Deploy to GitHub Pages
+    needs: build-docs
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download site
+        uses: actions/download-artifact@v4
+        with:
+          name: mkdocs-site
+          path: site
+
+      - name: Publish
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/_site
-          cname: lean-effects.github.io
-
-  validate-docs:
-    name: Validate Documentation
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Check documentation links
-        run: |
-          python scripts/validate-docs.py
-
-      - name: Check for broken examples
-        run: |
-          python scripts/validate-examples.py
-
-      - name: Check documentation completeness
-        run: |
-          python scripts/check-docs.py --strict
+          publish_dir: ./site

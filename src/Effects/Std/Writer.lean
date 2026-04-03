@@ -16,7 +16,7 @@ instance {ω : Type u} : Functor (WriterSig ω) where
   map f := fun m => match m with
     | .tell w => .tell w
 
--- Writer theory definition according to the production spec
+-- Writer theory definition for the bundled DSL
 def WriterTheory (ω : Type u) [Monoid ω] : Theory where
   name := "Writer"
   params := [⟨"ω", "Type u"⟩]

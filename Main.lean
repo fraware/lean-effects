@@ -1,8 +1,8 @@
 -- Main entry point for lean-effects
 import Effects
 
--- Version information
-def version : String := "1.0.0"
+-- Version: keep in sync with [VERSION](VERSION) and release tags.
+def version : String := (include_str "VERSION").trim
 
 -- Help text
 def helpText : String :=
@@ -88,7 +88,7 @@ def runExamples : IO Unit := do
   IO.println ""
   IO.println "Available examples:"
   IO.println "1. Basic usage patterns (examples/BasicExample.lean)"
-  IO.println "2. Production specification (examples/ProductionSpecExample.lean)"
+  IO.println "2. Larger example (examples/ProductionSpecExample.lean)"
   IO.println "3. Small language interpreter (src/Effects/Examples/SmallLang.lean)"
   IO.println ""
   IO.println "To explore these examples:"

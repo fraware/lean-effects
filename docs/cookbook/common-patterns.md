@@ -1,13 +1,16 @@
 # Common Patterns Cookbook
 
-This cookbook provides practical examples and patterns for using lean-effects in real applications.
+!!! note "Examples"
+    These recipes are educational. Compare names and types with [`src/Effects/`](https://github.com/fraware/lean-effects/tree/main/src/Effects) and [`tests/`](https://github.com/fraware/lean-effects/tree/main/tests) before copying into a proof.
+
+This cookbook collects practical patterns for algebraic effects with lean-effects.
 
 ## Basic State Management
 
 ### Simple Counter
 
 ```lean
-import Effects.Std
+import Effects
 
 -- Define a counter effect
 theory Counter where
@@ -347,4 +350,4 @@ def example2 : Except String Nat :=
   runWithHandler State.handleExcept (State.get ())
 ```
 
-This cookbook provides a foundation for using lean-effects in production applications. Each pattern includes complete, runnable examples that demonstrate best practices and common use cases.
+Adapt these patterns to your own types and proofs; confirm them against the current library under `src/Effects/` before relying on them in a paper or product.

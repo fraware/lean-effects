@@ -1,6 +1,9 @@
 # DSL Reference
 
-This document provides a complete reference for the lean-effects DSL syntax and semantics.
+!!! tip "Details in code"
+    The running implementation is under [`src/Effects/DSL/`](https://github.com/fraware/lean-effects/tree/main/src/Effects/DSL), especially [`Syntax.lean`](https://github.com/fraware/lean-effects/blob/main/src/Effects/DSL/Syntax.lean) and [`Elab.lean`](https://github.com/fraware/lean-effects/blob/main/src/Effects/DSL/Elab.lean). This page is a summary; when in doubt, check those files.
+
+This document summarizes the lean-effects DSL syntax and semantics.
 
 ## Theory Definition
 
@@ -235,28 +238,9 @@ instance : State.Handler MyMonad where
   handler_laws!
 ```
 
-## Configuration
+## Implementation details
 
-### Options
-
-```lean
--- Timeout for code generation
-set_option effects.codegen.timeoutMs 8000
-
--- Enable tracing
-set_option effects.codegen.trace true
-
--- Inline proofs
-set_option effects.codegen.inlineProofs true
-```
-
-### Performance
-
-```lean
--- Performance gates
-set_option effects.performance.timeoutMs 30000
-set_option effects.performance.thresholdMs 1000
-```
+Codegen options, tracing flags, and timeouts are defined alongside the elaborator in [`Effects.DSL.Elab`](https://github.com/fraware/lean-effects/blob/main/src/Effects/DSL/Elab.lean). There is no separate stable `set_option` surface documented here; inspect that module (or use `#help option` in a scratch file) for what your build exposes.
 
 ## Best Practices
 

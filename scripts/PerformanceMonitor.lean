@@ -333,7 +333,7 @@ def generatePerformanceReport (monitor : PerformanceMonitor) : IO Unit := do
 -- Main performance monitoring function
 def main (args : List String) : IO Unit := do
   let config : TelemetryConfig := {
-    enabled := (← IO.getEnv "EFFECTS_TELEMETRY").getD "true" == "true"
+    enabled := (← IO.getEnv "EFFECTS_TELEMETRY").getD "false" == "true"
     outputFile := (← IO.getEnv "PERFORMANCE_OUTPUT").getD "performance-telemetry.json"
     collectMemory := true
     collectTiming := true
@@ -364,6 +364,3 @@ def main (args : List String) : IO Unit := do
   saveTelemetryData finalMonitor
 
   IO.println "Performance monitoring completed."
-
--- Entry point
-#eval main (← IO.getArgs)

@@ -1,493 +1,249 @@
 <div align="center">
- 
+
 # lean-effects
 
-**DSL for Lawvere Theories of Effects in Lean 4**
+### Algebraic effects in Lean 4
 
-[![Performance Gate](https://github.com/fraware/lean-effects/workflows/Performance%20Gate/badge.svg)](https://github.com/fraware/lean-effects/actions)
+**Lawvere theories · free monads · handlers · fusion · tactics**
+
+[![CI](https://github.com/fraware/lean-effects/actions/workflows/ci.yml/badge.svg)](https://github.com/fraware/lean-effects/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Lean toolchain](https://img.shields.io/badge/Lean-toolchain%20pinned-804098.svg)](lean-toolchain)
 
-*Algebraic Effects via Lawvere Theories & Handlers with Code Generation, Fusion Theorems, and Curated Simp Packs*
+<br />
+
+[Quick start](#quick-start) · [Install](#install) · [Documentation](#documentation) · [Contributing](CONTRIBUTING.md)
 
 </div>
 
 ---
 
-## Table of Contents
+> **lean-effects** helps you describe effects with operations and laws, write programs in a free monad, run them with handlers, and prove things using bundled simplification rules and tactics.  
+> It includes **State**, **Reader**, **Writer**, **Exception**, and **Nondet**, ways to combine them, and works with **Mathlib** on a fixed **Lean** version (see `lean-toolchain`).
 
-- [Overview](#overview)
-- [Features](#features)
-- [Quick Start](#quick-start)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Standard Library](#standard-library)
-- [Architecture](#architecture)
-- [Performance](#performance)
-- [Documentation](#documentation)
-- [Examples](#examples)
-- [Testing](#testing)
-- [Contributing](#contributing)
-- [License](#license)
+---
 
-## Overview
+## Why lean-effects
 
-**lean-effects** is a domain-specific language for defining Lawvere theories of effects in Lean 4. It provides automatic code generation for free monads, handlers, fusion theorems, and simplification packs, along with a comprehensive standard library of common effects and their compositional combinations.
+| | |
+|:---|:---|
+| **Theories** | Operations and laws stay in one place so programs and proofs stay aligned. |
+| **Programs** | A standard free monad with `bind`, lemmas, and the usual monad interface. |
+| **Handlers** | Run those programs in the monad you choose, with correctness conditions built in. |
+| **Proof help** | Tactics such as `effect_fuse!` and `handler_laws!`, plus simp sets for common steps. |
+| **Ready-made effects** | State, environment, logging, errors, and nondeterminism, plus combination examples. |
 
-### Key Capabilities
+---
 
-- **Theory Definition**: Define effect theories with operations and equations
-- **Code Generation**: Automatic generation of free monads, handlers, and fusion theorems
-- **Standard Library**: Production-ready effects (State, Reader, Writer, Exception, Nondet)
-- **Composition**: Seamless combination of effects via sums and products
-- **Performance**: Deterministic, byte-stable proofs with bounded search
-- **CI/CD**: Comprehensive testing, performance gates, and automated deployment
-
-## Quickstart
-
-### One-Command Install & Run
-
-**Using Docker (Recommended)**
-
-```bash
-# Run the help command
-docker run --rm ghcr.io/fraware/lean-effects:latest --help
-
-# Run a quick demo
-docker run --rm ghcr.io/fraware/lean-effects:latest demo
-
-# Validate installation
-docker run --rm ghcr.io/fraware/lean-effects:latest validate
-```
-
-**Using Lake (Lean Package Manager)**
-
-```bash
-# Add to your lakefile.lean
-require leanEffects from git "https://github.com/fraware/lean-effects.git"
-
-# Then in your Lean files
-import Effects
-```
-
-**Local Development**
-
-```bash
-# Clone and set up
-git clone https://github.com/fraware/lean-effects.git
-cd lean-effects
-
-# On Unix/Linux/macOS
-make dev
-
-# On Windows
-make.bat dev
-
-# Run locally
-make run        # Unix/Linux/macOS
-make.bat run    # Windows
-
-# Run demo and examples
-make demo       # Unix/Linux/macOS
-make.bat demo   # Windows
-```
-
-### Basic Usage
+## Minimal example
 
 ```lean
 import Effects
 
--- Define a simple stateful computation
 def stateExample : State.Free Nat Nat := do
   let current ← State.get Nat
   State.put Nat (current + 1)
   State.get Nat
 
--- Run with initial state
-#eval State.run stateExample 0  -- (1, 1)
+#eval State.run stateExample 0   -- (1, 1)
 ```
 
-### Exception Handling
+<details>
+<summary><strong>More one-liners</strong> (Reader, Writer, Exception, Nondet)</summary>
 
 ```lean
--- Define computation that may throw
-def exceptionExample : Exception.Free String Nat :=
-  Exception.throw String "Something went wrong"
+import Effects
 
--- Run with error handling
-#eval Exception.run exceptionExample  -- Except.error "Something went wrong"
+-- Reader
+#eval Reader.run (do let e ← Reader.ask Nat; pure (e * 2)) 5   -- 10
+
+-- Writer (log type ω needs a Monoid instance, e.g. String)
+#eval Writer.run (do Writer.tell String "hi"; pure 42)           -- (42, "hi")
+
+-- Exception
+#eval Exception.run (Exception.throw String "oops")            -- Except.error "oops"
+
+-- Nondet.choice takes two plain α values, not sub-computations
+#eval Nondet.run (Nondet.choice 1 2)                           -- [1, 2]
 ```
 
-### Reader Environment
+</details>
 
-```lean
--- Define computation that reads from environment
-def readerExample : Reader.Free Nat Nat := do
-  let env ← Reader.ask Nat
-  pure (env * 2)
+---
 
--- Run with environment
-#eval Reader.run readerExample 5  -- 10
-```
+## Quick start
 
-### Writer Logging
-
-```lean
--- Define computation that writes to log
-def writerExample : Writer.Free String Nat := do
-  Writer.tell String "Starting computation"
-  Writer.tell String "Processing data"
-  pure 42
-
--- Run and get result with log
-#eval Writer.run writerExample  -- (42, "Starting computationProcessing data")
-```
-
-### Nondeterministic Choice
-
-```lean
--- Define nondeterministic computation
-def nondetExample : Nondet.Free Nat :=
-  Nondet.choice (pure 1) (pure 2)
-
--- Run and get all possible results
-#eval Nondet.run nondetExample  -- [1, 2]
-```
-
-## Installation
-
-### Prerequisites
-
-- Lean 4.8.0 or later
-- Lake package manager
-- Git
-
-### Installation Steps
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/fraware/lean-effects.git
-   cd lean-effects
-   ```
-
-2. **Install dependencies**:
-   ```bash
-   lake update
-   ```
-
-3. **Build the project**:
-   ```bash
-   lake build
-   ```
-
-4. **Run tests**:
-   ```bash
-   lake test
-   ```
-
-### Adding to Your Project
-
-Add to your `lakefile.lean`:
-
-```lean
-require lean-effects from git "https://github.com/fraware/lean-effects.git"
-```
-
-### Development with Makefile
-
-The project includes a comprehensive Makefile for development automation:
+<table>
+<tr>
+<td width="33%" valign="top"><strong>Docker</strong></td>
+<td width="33%" valign="top"><strong>Depend on it</strong></td>
+<td width="33%" valign="top"><strong>Clone it</strong></td>
+</tr>
+<tr>
+<td valign="top">
 
 ```bash
-make dev       # Set up local development environment
-make run       # Run the CLI locally
-make test      # Run the test suite
-make demo      # Run a demonstration
-make build     # Build the project
-make clean     # Clean build artifacts
-make release   # Build release artifacts
-make docker-build  # Build Docker image
-make docker-run    # Run via Docker
+docker run --rm ghcr.io/fraware/lean-effects:latest --help
+docker run --rm ghcr.io/fraware/lean-effects:latest demo
 ```
 
-Run `make help` to see all available targets.
-
-## Usage
-
-### Defining Custom Effects
+</td>
+<td valign="top">
 
 ```lean
--- Define a custom effect theory
+require lean-effects from git
+  "https://github.com/fraware/lean-effects.git" @ "main"
+
+-- in your .lean files:
+import Effects
+```
+
+</td>
+<td valign="top">
+
+```bash
+git clone https://github.com/fraware/lean-effects.git
+cd lean-effects
+lake update && lake build
+lake exe lean-effects --help
+```
+
+*Unix/macOS:* `make dev` · *Windows:* `make.bat dev`
+
+</td>
+</tr>
+</table>
+
+---
+
+## Install
+
+| Step | What to do |
+|------|------------|
+| 1 | Install [elan](https://github.com/leanprover/elan) and open this repo so the `lean-toolchain` file is used. |
+| 2 | Run `lake update`. If downloads fail (e.g. in Docker), see [CONTRIBUTING](CONTRIBUTING.md). |
+| 3 | Run `lake build` to compile the library, tests, benchmarks, CLI, and helper programs. |
+
+Optional: `make help` for more targets.
+
+---
+
+## Standard effects (at a glance)
+
+| Effect | Code | Role |
+|--------|------|------|
+| **State** | [`State.lean`](src/Effects/Std/State.lean) | `get` / `put` / `modify` / `gets` / `run` / `eval` / `exec` |
+| **Reader** | [`Reader.lean`](src/Effects/Std/Reader.lean) | `ask`, `local`, `run` |
+| **Writer** | [`Writer.lean`](src/Effects/Std/Writer.lean) | `tell`, `run` / `eval` / `exec` (log type needs a monoid) |
+| **Exception** | [`Exception.lean`](src/Effects/Std/Exception.lean) | `throw`, `catch`, `run` → `Except` |
+| **Nondet** | [`Nondet.lean`](src/Effects/Std/Nondet.lean) | `empty`, `choice`, `run` → `List` |
+
+**Combining effects:** [`Sum.lean`](src/Effects/Compose/Sum.lean), [`Product.lean`](src/Effects/Compose/Product.lean). Examples: [`tests/Combo/`](tests/Combo/).
+
+---
+
+## Custom theories (DSL)
+
+Sketch of defining a theory and generating code (see [`src/Effects/DSL/`](src/Effects/DSL/) for the exact commands your build supports):
+
+```lean
 theory Counter where
   op increment : Unit ⟶ Unit
-  op decrement : Unit ⟶ Unit
   op getCount  : Unit ⟶ Nat
-  eq increment_decrement : ∀ u, increment (decrement u) = u
 end
 
--- Generate code for the theory
 derive_effect Counter [free, handler, fusion, simp]
 ```
 
-### Using Generated Code
-
-```lean
--- Use the generated free monad
-def counterExample : Counter.Free Nat := do
-  Counter.increment ()
-  Counter.increment ()
-  Counter.getCount ()
-
--- Run with a handler
-#eval Counter.run counterExample  -- Implementation depends on handler
-```
-
-### Effect Composition
-
-```lean
--- Combine effects using sum theory
-def StateException := SumTheory State Exception
-
--- Use combined effects
-def combinedExample : StateException.Free Nat String Nat := do
-  let s ← State.get Nat
-  if s > 10 then
-    Exception.throw String "State too large"
-  else
-    State.put Nat (s + 1)
-    pure s
-```
-
-## Standard Library
-
-### State Effect
-
-The State effect provides mutable state management:
-
-```lean
--- Operations
-def get (σ : Type u) : State.Free σ σ
-def put (σ : Type u) (s : σ) : State.Free σ Unit
-def modify (σ : Type u) (f : σ → σ) : State.Free σ Unit
-def gets (σ : Type u) (f : σ → α) : State.Free σ α
-
--- Execution
-def run (m : State.Free σ α) (s : σ) : α × σ
-def eval (m : State.Free σ α) (s : σ) : α
-def exec (m : State.Free σ α) (s : σ) : σ
-```
-
-### Reader Effect
-
-The Reader effect provides read-only environment access:
-
-```lean
--- Operations
-def ask (ρ : Type u) : Reader.Free ρ ρ
-def asks (f : ρ → α) : Reader.Free ρ α
-def local (f : ρ → ρ) (m : Reader.Free ρ α) : Reader.Free ρ α
-
--- Execution
-def run (m : Reader.Free ρ α) (r : ρ) : α
-```
-
-### Writer Effect
-
-The Writer effect provides logging and output accumulation:
-
-```lean
--- Operations
-def tell (ω : Type u) (w : ω) : Writer.Free ω Unit
-def tellReturn (w : ω) (x : α) : Writer.Free ω α
-
--- Execution
-def run (m : Writer.Free ω α) : α × ω
-def eval (m : Writer.Free ω α) : α
-def exec (m : Writer.Free ω α) : ω
-```
-
-### Exception Effect
-
-The Exception effect provides error handling:
-
-```lean
--- Operations
-def throw (ε : Type u) (e : ε) : Exception.Free ε α
-def catch (m : Exception.Free ε α) (h : ε → Exception.Free ε α) : Exception.Free ε α
-
--- Execution
-def run (m : Exception.Free ε α) : Except ε α
-```
-
-### Nondet Effect
-
-The Nondet effect provides nondeterministic choice:
-
-```lean
--- Operations
-def empty : Nondet.Free α
-def choice (x y : Nondet.Free α) : Nondet.Free α
-
--- Execution
-def run (m : Nondet.Free α) : List α
-```
+---
 
 ## Architecture
 
-### Theoretical Foundation
-
-lean-effects is built on solid mathematical foundations:
-
-1. **Lawvere Theories**: Each effect is defined as a Lawvere theory with operations and equations
-2. **Free Monads**: Automatically generated from effect signatures
-3. **Handlers**: Monad morphisms that interpret effects into concrete monads
-4. **Fusion Theorems**: Enable efficient composition and optimization
-5. **Simplification Packs**: Provide β/η reduction and effect-specific rewrites
-
-### Code Generation Pipeline
-
 ```mermaid
-graph TD
-    A[Theory Definition] --> B[Parse Operations]
-    B --> C[Generate Free Monad]
-    C --> D[Generate Handlers]
-    D --> E[Generate Fusion Theorems]
-    E --> F[Generate Simp Packs]
-    F --> G[Production Code]
+flowchart LR
+  subgraph input [Spec]
+    T[Theory ops plus laws]
+  end
+  subgraph gen [Generation]
+    F[FreeMonad]
+    H[Handler laws]
+    S[Simp plus tactics]
+  end
+  subgraph use [Use]
+    P[Programs]
+    R[Reasoning]
+  end
+  T --> F
+  T --> H
+  F --> P
+  H --> P
+  H --> S
+  S --> R
 ```
 
-### Performance Characteristics
+You specify a theory, get a free monad and handler story, then use simp and tactics to prove the properties you care about.
 
-- **Deterministic**: Byte-stable proof terms across builds
-- **Bounded Search**: Fixed lemma order, no unbounded backtracking
-- **Efficient**: Optimized code generation and execution
-- **Scalable**: Handles complex effect combinations
+---
 
-## Performance
+## Tests and CI
 
-### Performance Targets
+| | |
+|:---|:---|
+| **Proofs in `tests/`** | `lake build Tests` |
+| **Extra executable checks** | `lake exe test-suite` |
+| **Benchmarks** | `lake exe Bench` · `lake exe performance-monitor` |
 
-| Metric | Target | Current |
-|--------|--------|---------|
-| Code Generation | < 1 second per theory | ✅ |
-| Tactics (P50) | ≤ 150ms | ✅ |
-| Tactics (P95) | ≤ 400ms | ✅ |
-| Memory Usage | < 100MB | ✅ |
-| Build Time | < 5 minutes | ✅ |
+Continuous integration builds the project, runs those checks, and refuses new `sorry` in `src/`. Dependency versions are set in [`Lakefile.lean`](Lakefile.lean).
 
-### Performance Monitoring
+---
 
-The project includes comprehensive performance monitoring:
+## Repository layout
 
-- **Automated Benchmarks**: Run on every commit
-- **Performance Gates**: Fail builds on regression
-- **Historical Tracking**: Monitor performance trends
-- **CI Integration**: Automated performance validation
+| Path | Purpose |
+|------|---------|
+| [`src/Effects/`](src/Effects/) | Library |
+| [`tests/`](tests/) | Theorems and examples used as tests |
+| [`examples/`](examples/) | Small demos |
+| [`scripts/`](scripts/) | Extra programs invoked with `lake exe …` |
+| [`docs/`](docs/) | Website source and [`mkdocs.yml`](docs/mkdocs.yml) |
+| [`VERSION`](VERSION) | CLI version string (read in `Main.lean`) |
+
+---
 
 ## Documentation
 
-### Comprehensive Documentation
+| | |
+|:---|:---|
+| [Installation](docs/getting-started/installation.md) | Clone, build, common issues |
+| [Basic usage](docs/getting-started/basic-usage.md) | Concepts and snippets |
+| [DSL reference](docs/reference/dsl-reference.md) | Syntax |
+| [Core API](docs/api/core.md) | Where the main types live |
+| [Cookbook](docs/cookbook/common-patterns.md) | Patterns |
 
-- **[Getting Started](docs/getting-started/installation.md)**: Installation and setup guide
-- **[Basic Usage](docs/getting-started/basic-usage.md)**: Core concepts and examples
-- **[DSL Reference](docs/reference/dsl-reference.md)**: Complete syntax and semantics
-- **[API Documentation](docs/api/core.md)**: Full API reference
-- **[Cookbook](docs/cookbook/common-patterns.md)**: Common patterns and best practices
+Local site: `pip install -r docs/requirements.txt`, then `cd docs && mkdocs serve`.
 
-### Online Resources
+**Examples:** [`examples/BasicExample.lean`](examples/BasicExample.lean), [`examples/ProductionSpecExample.lean`](examples/ProductionSpecExample.lean), [`src/Effects/Examples/SmallLang.lean`](src/Effects/Examples/SmallLang.lean).
 
-- **Documentation Site**: [lean-effects.github.io](https://lean-effects.github.io)
-- **API Reference**: [lean-effects.github.io/api](https://lean-effects.github.io/api)
-- **Examples**: [lean-effects.github.io/examples](https://lean-effects.github.io/examples)
-
-## Examples
-
-### Production Examples
-
-- **`examples/BasicExample.lean`**: Basic usage patterns
-- **`examples/ProductionSpecExample.lean`**: Production specification examples
-- **`src/Effects/Examples/SmallLang.lean`**: Complete interpreter implementation
-
-### Test Suite
-
-- **`tests/ProductionSpecTest.lean`**: Comprehensive test suite
-- **`tests/Combo/`**: Effect combination tests
-- **`tests/Handlers/`**: Handler implementation tests
-
-## Testing
-
-### Running Tests
-
-```bash
-# Run all tests
-lake test
-
-# Run specific test categories
-lake test Tests.ProductionSpecTest
-lake test Tests.Combo
-lake test Tests.Handlers
-```
-
-### Test Coverage
-
-The test suite includes:
-
-- **Unit Tests**: Individual effect functionality
-- **Integration Tests**: Effect combinations
-- **Property Tests**: Mathematical laws and properties
-- **Performance Tests**: Benchmark validation
-- **Regression Tests**: Ensure stability across changes
-
-### CI/CD Testing
-
-- **Multi-platform**: Ubuntu, Windows, macOS
-- **Multi-version**: Lean 4.7.0, 4.8.0, 4.12.0
-- **Automated**: Runs on every push and PR
-- **Performance Gates**: Automated regression detection
+---
 
 ## Contributing
 
-We welcome contributions to lean-effects!
+See **[CONTRIBUTING.md](CONTRIBUTING.md)** for how to build, test, release, and configure telemetry or Docker.
 
-### Development Setup
-
-1. **Fork the repository**
-2. **Clone your fork**:
-   ```bash
-   git clone https://github.com/your-username/lean-effects.git
-   cd lean-effects
-   ```
-
-3. **Create a feature branch**:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-4. **Make your changes** and add tests
-
-5. **Run the test suite**:
-   ```bash
-   lake test
-   ```
-
-6. **Submit a pull request**
-
-### Code Standards
-
-- **Lean 4 Style**: Follow Lean 4 coding conventions
-- **Documentation**: Document all public APIs
-- **Tests**: Add tests for new functionality
-- **Performance**: Ensure performance targets are met
-- **CI/CD**: All checks must pass
+---
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE).
 
 ---
 
 <div align="center">
 
-**lean-effects** - *Algebraic Effects via Lawvere Theories & Handlers*
+<br />
 
-[Documentation](https://lean-effects.github.io) • [Examples](examples/) • [API Reference](docs/api/)
+**lean-effects** — algebraic effects, formally
+
+[Contributing](CONTRIBUTING.md) · [Examples](examples/) · [Docs](docs/) · [Actions](https://github.com/fraware/lean-effects/actions)
 
 </div>

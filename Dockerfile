@@ -27,20 +27,24 @@ RUN elan install $(cat lean-toolchain) && elan default $(cat lean-toolchain)
 # Copy Lake configuration
 COPY Lakefile.lean lake-manifest.json ./
 
+# Optional: pass GITHUB_TOKEN at build time for Lake (e.g. ProofWidgets release fetch)
+ARG GITHUB_TOKEN=
+ENV GITHUB_TOKEN=${GITHUB_TOKEN}
+
 # Update dependencies
 RUN lake update
 
 # Copy source code
 COPY src/ src/
-COPY Main.lean .
-COPY test.lean .
+COPY VERSION Main.lean .
 
-# Copy examples and tests (optional, for validation)
+# Copy examples, benchmarks, and tests (default Lake targets)
+COPY bench/ bench/
 COPY examples/ examples/
 COPY tests/ tests/
 
-# Build the project
-RUN lake build --release
+# Build the project (default targets include Effects, Tests, Bench, CLI)
+RUN lake build
 
 # Stage 2: Runtime stage
 FROM ubuntu:22.04

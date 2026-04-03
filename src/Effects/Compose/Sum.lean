@@ -117,7 +117,7 @@ theorem sum_bind_assoc [Functor F] [Functor G] [Monad M]
   bind (bind m f) g = bind m (fun x => bind (f x) g) := by
   simp [bind, FreeMonad.bind_assoc]
 
--- Composition definitions as per production spec
+-- Composition definitions aligned with the bundled DSL
 def State ⊗ Exception := SumTheory StateSig ExceptionSig
 def Reader × Writer := ProductTheory ReaderSig WriterSig
 

@@ -1,11 +1,10 @@
--- Production specification example
--- This file demonstrates the DSL usage according to the production spec
+-- Larger worked example (state, combinations, small language)
 import Effects
 
 namespace Effects.Examples.ProductionSpec
 
 -- Example 1: Define a simple State theory using the DSL
--- This would be the ideal syntax according to the production spec:
+-- Target DSL shape (see `src/Effects/DSL/` for what is implemented today):
 --
 -- theory State (σ : Type u) where
 --   op get  : Unit ⟶ σ

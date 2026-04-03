@@ -339,6 +339,3 @@ def main (args : List String) : IO Unit := do
   saveBenchmarkResults memorySuite
 
   IO.println "Benchmarking completed."
-
--- Entry point
-#eval main (← IO.getArgs)

@@ -1,6 +1,9 @@
 # First Example
 
-This guide walks through a complete example of using lean-effects to build a simple calculator with logging and error handling.
+!!! note "Tutorial"
+    This page is a walkthrough, not a spec. For working Lean that matches the repo, see [`examples/`](https://github.com/fraware/lean-effects/tree/main/examples) and [`tests/`](https://github.com/fraware/lean-effects/tree/main/tests).
+
+This guide walks through a design for a simple calculator with logging and error handling using algebraic effects.
 
 ## The Problem
 
@@ -15,7 +18,7 @@ We want to build a calculator that:
 First, let's define our custom effects:
 
 ```lean
-import Effects.Std
+import Effects
 
 -- Calculator state effect
 theory Calculator where

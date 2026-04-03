@@ -16,7 +16,7 @@ instance {ρ : Type u} : Functor (ReaderSig ρ) where
   map f := fun m => match m with
     | .ask => .ask
 
--- Reader theory definition according to the production spec
+-- Reader theory definition for the bundled DSL
 def ReaderTheory (ρ : Type u) : Theory where
   name := "Reader"
   params := [⟨"ρ", "Type u"⟩]

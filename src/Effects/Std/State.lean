@@ -18,7 +18,7 @@ instance {σ : Type u} : Functor (StateSig σ) where
     | .get => .get
     | .put s => .put s
 
--- State theory definition according to the production spec
+-- State theory definition for the bundled DSL
 def StateTheory (σ : Type u) : Theory where
   name := "State"
   params := [⟨"σ", "Type u"⟩]

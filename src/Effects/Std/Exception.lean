@@ -16,7 +16,7 @@ instance {ε : Type u} : Functor (ExceptionSig ε) where
   map f := fun m => match m with
     | .throw e => .throw e
 
--- Exception theory definition according to the production spec
+-- Exception theory definition for the bundled DSL
 def ExceptionTheory (ε : Type u) : Theory where
   name := "Exception"
   params := [⟨"ε", "Type u"⟩]

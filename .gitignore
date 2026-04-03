@@ -1,0 +1,25 @@
+# Lake / Lean
+/.lake/
+/build/
+
+# Tooling / local env
+*.local
+*.dev
+
+# Python (docs tooling)
+__pycache__/
+*.py[cod]
+.site/
+
+# Coverage / reports (CI artifacts when run locally)
+/coverage/
+test-report.txt
+effects-telemetry.json
+performance-telemetry.json
+benchmark-results.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

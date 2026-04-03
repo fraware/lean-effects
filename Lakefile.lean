@@ -5,23 +5,48 @@ package «lean-effects» where
   -- add package configuration options here
 
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "v4.8.0"
+  "https://github.com/leanprover-community/mathlib4.git" @ "v4.16.0"
 
 @[default_target]
 lean_lib «Effects» where
   srcDir := "src"
-  -- add library configuration options here
 
+@[default_target]
 lean_lib «Tests» where
   srcDir := "tests"
-  -- add library configuration options here
 
--- Main executable
+@[default_target]
 lean_exe «lean-effects» where
   root := `Main
   supportInterpreter := true
 
--- Benchmark target
+@[default_target]
 lean_exe «Bench» where
-  root := `Bench
+  root := `Benchmarks
+  srcDir := "bench"
+  supportInterpreter := true
+
+lean_exe «performance-monitor» where
+  root := `PerformanceMonitor
+  srcDir := "scripts"
+  supportInterpreter := true
+
+lean_exe «coverage-report» where
+  root := `CoverageReport
+  srcDir := "scripts"
+  supportInterpreter := true
+
+lean_exe «generate-docs» where
+  root := `GenerateDocs
+  srcDir := "scripts"
+  supportInterpreter := true
+
+lean_exe «build-release» where
+  root := `BuildRelease
+  srcDir := "scripts"
+  supportInterpreter := true
+
+lean_exe «test-suite» where
+  root := `TestSuite
+  srcDir := "scripts"
   supportInterpreter := true
