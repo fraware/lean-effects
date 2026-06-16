@@ -250,7 +250,7 @@ def buildConfigArtifacts (config : ReleaseConfig) (outputDir : String) : IO (Lis
 
   -- Copy configuration files
   let configFiles := [
-    "Lakefile.lean",
+    "lakefile.lean",
     "lake-manifest.json",
     "lean-toolchain"
   ]
