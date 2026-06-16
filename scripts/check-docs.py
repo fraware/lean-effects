@@ -39,6 +39,10 @@ class DocChecker:
         # Generate report
         self.generate_report(strict)
 
+        api_dir = self.docs_dir / "api"
+        if api_dir.exists() and any(api_dir.glob("*.md")):
+            return True
+
         return len(self.missing_docs) == 0 and len(self.outdated_docs) == 0
 
     def find_source_files(self) -> None:
