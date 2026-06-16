@@ -5,8 +5,6 @@ import Lean
 import Lean.Elab.Command
 import Lean.Elab.Term
 import Lean.Meta
-import System.Platform
-import System.FilePath
 import Json
 import IO
 import Effects.Std.State
@@ -103,7 +101,7 @@ def runBenchmark (suite : BenchmarkSuite) (name : String) (benchmark : IO α) : 
       success := true
       timestamp := ← getCurrentTime
       leanVersion := Lean.versionString
-      platform := s!"{System.Platform.targetOS}-{System.Platform.targetArch}"
+      platform := "unknown"
     }
 
     return result
@@ -118,7 +116,7 @@ def runBenchmark (suite : BenchmarkSuite) (name : String) (benchmark : IO α) : 
       error := some e.toString
       timestamp := ← getCurrentTime
       leanVersion := Lean.versionString
-      platform := s!"{System.Platform.targetOS}-{System.Platform.targetArch}"
+      platform := "unknown"
     }
 
     return result

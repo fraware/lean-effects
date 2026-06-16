@@ -20,7 +20,6 @@ lean_exe «lean-effects» where
   root := `Main
   supportInterpreter := true
 
-@[default_target]
 lean_exe «Bench» where
   root := `Benchmarks
   srcDir := "bench"
