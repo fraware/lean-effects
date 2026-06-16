@@ -1,5 +1,7 @@
--- Basic example of using the lean-effects library
+-- Basic example of using the lean-effects library (DSL + tactics)
 import Effects
+import Effects.DSL
+import Effects.Automation
 
 -- Define a simple state effect
 theory Counter where

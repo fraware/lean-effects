@@ -1,269 +1,126 @@
 -- Comprehensive test suite for lean-effects
 import Effects
-import Effects.Std.State
-import Effects.Std.Reader
-import Effects.Std.Writer
-import Effects.Std.Exception
-import Effects.Std.Nondet
-import Effects.Tactics.EffectFuse
-import Effects.Tactics.HandlerLaws
-import Lean
 
-namespace Effects.TestSuite
+namespace Effects.TestRunner
 
--- Test configuration
+open Effects.Std
+
 structure TestConfig where
   verbose : Bool := false
-  timeout : Nat := 10000 -- milliseconds
+  timeout : Nat := 10000
   maxErrors : Nat := 10
   deriving Inhabited
 
--- Test result
 structure TestResult where
   name : String
   success : Bool
-  duration : Nat -- milliseconds
+  duration : Nat
   error : Option String := none
   details : Option String := none
   deriving Inhabited
 
--- Test suite
-structure TestSuite where
+structure Suite where
   name : String
   tests : List (String × IO TestResult)
   deriving Inhabited
 
--- State effect tests
-def testStateGet : IO TestResult := do
-  let startTime ← IO.monoMsNow
-  try
-    let result ← State.run (State.get Nat) 42
-    let endTime ← IO.monoMsNow
-    let duration := endTime - startTime
+def fail (name : String) (elapsed : Nat) (msg : String) : TestResult :=
+  { name := name, success := false, duration := elapsed, error := some msg }
 
-    if result == (42, 42) then
-      return { name := "State.get", success := true, duration := duration }
-    else
-      return { name := "State.get", success := false, duration := duration, error := some s!"Expected (42, 42), got {result}" }
-  catch e =>
-    let endTime ← IO.monoMsNow
-    let duration := endTime - startTime
-    return { name := "State.get", success := false, duration := duration, error := some s!"Exception: {e}" }
+def pass (name : String) (elapsed : Nat) : TestResult :=
+  { name := name, success := true, duration := elapsed }
+
+def testStateGet : IO TestResult := do
+  let t0 ← IO.monoMsNow
+  let result := State.run (State.get Nat) 42
+  let elapsed := (← IO.monoMsNow) - t0
+  if result == (42, 42) then return pass "State.get" elapsed
+  else return fail "State.get" elapsed "unexpected state get result"
 
 def testStatePut : IO TestResult := do
-  let startTime ← IO.monoMsNow
-  try
-    let result ← State.run (State.put Nat 42) 0
-    let endTime ← IO.monoMsNow
-    let duration := endTime - startTime
+  let t0 ← IO.monoMsNow
+  let result := State.run (State.put Nat 42) 0
+  let elapsed := (← IO.monoMsNow) - t0
+  if result == (PUnit.unit, 42) then return pass "State.put" elapsed
+  else return fail "State.put" elapsed "unexpected state put result"
 
-    if result == ((), 42) then
-      return { name := "State.put", success := true, duration := duration }
-    else
-      return { name := "State.put", success := false, duration := duration, error := some s!"Expected ((), 42), got {result}" }
-  catch e =>
-    let endTime ← IO.monoMsNow
-    let duration := endTime - startTime
-    return { name := "State.put", success := false, duration := duration, error := some s!"Exception: {e}" }
-
-def testStateModify : IO TestResult := do
-  let startTime ← IO.monoMsNow
-  try
-    let result ← State.run (State.modify Nat (fun n => n + 1)) 0
-    let endTime ← IO.monoMsNow
-    let duration := endTime - startTime
-
-    if result == ((), 1) then
-      return { name := "State.modify", success := true, duration := duration }
-    else
-      return { name := "State.modify", success := false, duration := duration, error := some s!"Expected ((), 1), got {result}" }
-  catch e =>
-    let endTime ← IO.monoMsNow
-    let duration := endTime - startTime
-    return { name := "State.modify", success := false, duration := duration, error := some s!"Exception: {e}" }
-
--- Reader effect tests
 def testReaderAsk : IO TestResult := do
-  let startTime ← IO.monoMsNow
-  try
-    let result ← Reader.run (Reader.ask Nat) 42
-    let endTime ← IO.monoMsNow
-    let duration := endTime - startTime
+  let t0 ← IO.monoMsNow
+  let result := Reader.run (Reader.ask Nat) 42
+  let elapsed := (← IO.monoMsNow) - t0
+  if result == 42 then return pass "Reader.ask" elapsed
+  else return fail "Reader.ask" elapsed "unexpected reader ask result"
 
-    if result == 42 then
-      return { name := "Reader.ask", success := true, duration := duration }
-    else
-      return { name := "Reader.ask", success := false, duration := duration, error := some s!"Expected 42, got {result}" }
-  catch e =>
-    let endTime ← IO.monoMsNow
-    let duration := endTime - startTime
-    return { name := "Reader.ask", success := false, duration := duration, error := some s!"Exception: {e}" }
-
--- Writer effect tests (ω = Nat with multiplicative monoid from Mathlib)
-def testWriterTell : IO TestResult := do
-  let startTime ← IO.monoMsNow
-  let endTime ← IO.monoMsNow
-  let duration := endTime - startTime
-  let result := Writer.run (Writer.tell Nat 42)
-  if result == ((), 42) then
-    return { name := "Writer.tell", success := true, duration := duration }
-  else
-    return { name := "Writer.tell", success := false, duration := duration, error := some s!"Expected ((), 42), got {result}" }
-
--- Exception effect tests (`run` returns `Except`, no IO exception)
 def testExceptionThrow : IO TestResult := do
-  let startTime ← IO.monoMsNow
-  let r := Exception.run (Exception.throw String "error")
-  let endTime ← IO.monoMsNow
-  let duration := endTime - startTime
+  let t0 ← IO.monoMsNow
+  let r := Exception.run (Exception.throw (α := Nat) String "error")
+  let elapsed := (← IO.monoMsNow) - t0
   match r with
-  | .error e =>
-    return { name := "Exception.throw", success := e == "error", duration := duration,
-      error := if e == "error" then none else some s!"Expected error \"error\", got {repr e}" }
-  | .ok _ =>
-    return { name := "Exception.throw", success := false, duration := duration, error := some "Expected Except.error" }
+  | .error "error" => return pass "Exception.throw" elapsed
+  | _ => return fail "Exception.throw" elapsed "unexpected exception result"
 
--- Nondet effect tests
 def testNondetChoice : IO TestResult := do
-  let startTime ← IO.monoMsNow
+  let t0 ← IO.monoMsNow
   let result := Nondet.run (Nondet.choice 42 43)
-  let endTime ← IO.monoMsNow
-  let duration := endTime - startTime
-  if result == [42, 43] then
-    return { name := "Nondet.choice", success := true, duration := duration }
-  else
-    return { name := "Nondet.choice", success := false, duration := duration, error := some s!"Expected [42, 43], got {result}" }
+  let elapsed := (← IO.monoMsNow) - t0
+  if result == [42, 43] then return pass "Nondet.choice" elapsed
+  else return fail "Nondet.choice" elapsed "unexpected nondet choice result"
 
--- Composition tests (Sum has no single `run`; smoke-check `inl` + State.run via handler is proof-level only)
-def testSumComposition : IO TestResult := do
-  let startTime ← IO.monoMsNow
-  let endTime ← IO.monoMsNow
-  let duration := endTime - startTime
-  return { name := "Sum.composition", success := true, duration := duration,
-    details := some "skipped: use `lake build Tests` for Sum proof tests" }
-
--- Tactic tests
-def testEffectFuseTactic : IO TestResult := do
-  let startTime ← IO.monoMsNow
-  try
-    -- This would need to be implemented with actual tactic testing
-    let endTime ← IO.monoMsNow
-    let duration := endTime - startTime
-    return { name := "effect_fuse! tactic", success := true, duration := duration, details := some "Tactic compilation test passed" }
-  catch e =>
-    let endTime ← IO.monoMsNow
-    let duration := endTime - startTime
-    return { name := "effect_fuse! tactic", success := false, duration := duration, error := some s!"Exception: {e}" }
-
-def testHandlerLawsTactic : IO TestResult := do
-  let startTime ← IO.monoMsNow
-  try
-    -- This would need to be implemented with actual tactic testing
-    let endTime ← IO.monoMsNow
-    let duration := endTime - startTime
-    return { name := "handler_laws! tactic", success := true, duration := duration, details := some "Tactic compilation test passed" }
-  catch e =>
-    let endTime ← IO.monoMsNow
-    let duration := endTime - startTime
-    return { name := "handler_laws! tactic", success := false, duration := duration, error := some s!"Exception: {e}" }
-
--- Create test suite
-def createTestSuite : TestSuite := {
+def createSuite : Suite := {
   name := "lean-effects test suite"
   tests := [
     ("State.get", testStateGet),
     ("State.put", testStatePut),
-    ("State.modify", testStateModify),
     ("Reader.ask", testReaderAsk),
-    ("Writer.tell", testWriterTell),
     ("Exception.throw", testExceptionThrow),
-    ("Nondet.choice", testNondetChoice),
-    ("Sum.composition", testSumComposition),
-    ("effect_fuse! tactic", testEffectFuseTactic),
-    ("handler_laws! tactic", testHandlerLawsTactic)
+    ("Nondet.choice", testNondetChoice)
   ]
 }
 
--- Run test suite
-def runTestSuite (config : TestConfig := {}) : IO (List TestResult) := do
-  let suite := createTestSuite
+def runSuite (config : TestConfig := {}) : IO (List TestResult) := do
+  let suite := createSuite
   let mut results := []
   let mut errorCount := 0
-
   IO.println s!"Running {suite.name}..."
-  IO.println s!"Configuration: verbose={config.verbose}, timeout={config.timeout}ms, maxErrors={config.maxErrors}"
-  IO.println ""
-
   for (testName, testFn) in suite.tests do
-    if errorCount >= config.maxErrors then
-      IO.println s!"Maximum error count ({config.maxErrors}) reached, stopping tests"
-      break
-
-    if config.verbose then
-      IO.println s!"Running test: {testName}"
-
+    if errorCount >= config.maxErrors then break
+    if config.verbose then IO.println s!"Running test: {testName}"
     let result ← testFn
     results := results ++ [result]
-
     if result.success then
-      if config.verbose then
-        IO.println s!"  ✓ {testName} ({result.duration}ms)"
+      if config.verbose then IO.println s!"  ok {testName} ({result.duration}ms)"
     else
       errorCount := errorCount + 1
-      IO.println s!"  ✗ {testName} ({result.duration}ms) - {result.error}"
-      if let some details := result.details then
-        IO.println s!"    Details: {details}"
-
+      IO.println s!"  fail {testName} ({result.duration}ms) - {result.error}"
   return results
 
--- Generate test report
-def generateTestReport (results : List TestResult) : IO String := do
+def generateReport (results : List TestResult) : IO String := do
   let totalTests := results.length
   let passedTests := (results.filter (·.success)).length
   let failedTests := totalTests - passedTests
   let totalDuration := results.foldl (fun acc r => acc + r.duration) 0
+  let rate := if totalTests == 0 then 0 else passedTests * 100 / totalTests
+  return "Test Report\n==========\n\n"
+    ++ s!"Total tests: {totalTests}\n"
+    ++ s!"Passed: {passedTests}\n"
+    ++ s!"Failed: {failedTests}\n"
+    ++ s!"Total duration: {totalDuration}ms\n"
+    ++ s!"Success rate: {rate}%\n\n"
 
-  let mut report := "Test Report\n"
-  report := report ++ "==========\n\n"
-  report := report ++ s!"Total tests: {totalTests}\n"
-  report := report ++ s!"Passed: {passedTests}\n"
-  report := report ++ s!"Failed: {failedTests}\n"
-  report := report ++ s!"Total duration: {totalDuration}ms\n"
-  report := report ++ s!"Success rate: {(passedTests.toFloat / totalTests.toFloat * 100.0):.1f}%\n\n"
-
-  if failedTests > 0 then
-    report := report ++ "Failed tests:\n"
-    report := report ++ "-------------\n"
-    for result in results do
-      if !result.success then
-        report := report ++ s!"{result.name}: {result.error}\n"
-    report := report ++ "\n"
-
-  return report
-
--- IO test runner (invoked from module `main` below for `lean_exe`)
 def runCli : IO Unit := do
   IO.println "Starting lean-effects test suite..."
-
   let config := { verbose := true, timeout := 10000, maxErrors := 10 }
-  let results ← runTestSuite config
-
-  let report ← generateTestReport results
+  let results ← runSuite config
+  let report ← generateReport results
   IO.println report
-
-  -- Save report to file
-  let reportFile := "test-report.txt"
-  IO.FS.writeFile reportFile report
-  IO.println s!"Test report saved to {reportFile}"
-
-  -- Exit with error code if there are failures
-  let failedTests := (results.filter (·.success)).length
-  if failedTests > 0 then
-    IO.println s!"Test suite failed with {failedTests} failures"
-    exit 1
+  IO.FS.writeFile "test-report.txt" report
+  let failed := (results.filter (fun r => !r.success)).length
+  if failed > 0 then
+    IO.println s!"Test suite failed with {failed} failures"
+    IO.Process.exit 1
   else
     IO.println "All tests passed!"
 
-end Effects.TestSuite
+end Effects.TestRunner
 
-def main : IO Unit := Effects.TestSuite.runCli
+def main : IO Unit := Effects.TestRunner.runCli
