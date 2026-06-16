@@ -15,7 +15,7 @@ Tracks what is ready for CSLib upstream versus what remains repository-local dur
 | Reader example (`ask` / `local` / `run`) | `Effects.Std.Reader` | Candidate |
 | Writer example (`tell` / `run`) | `Effects.Std.Writer` | Candidate |
 | Sum / product composition | `Effects.Compose.Sum`, `Effects.Compose.Product` | Candidate |
-| Nondet example (`empty` / `choice` / `run`) | `Effects.Std.Nondet` | Candidate (runtime; one bind lemma `sorry`) |
+| Nondet example (`empty` / `choice` / `run`) | `Effects.Std.Nondet` | Candidate (runtime; `NondetT.runFree_bind` choice case still `sorry`) |
 
 ## Postponed
 
@@ -25,8 +25,8 @@ Tracks what is ready for CSLib upstream versus what remains repository-local dur
 | DSL extraction | `Effects.DSL` (syntax, elaboration, `derive_effect`) stays local |
 | Tactics | `effect_fuse!`, `handler_laws!`, `local_simp!` not upstreamed this sprint; macro-based stubs build on 4.31 |
 | Scripts | Performance monitor, coverage, release builder, doc generator |
-| `interpret_bind` gaps | Proven: State, Reader, Writer, Exception, Sum, Product. `sorry`: Nondet `choice` in `NondetT.runFree_bind` |
-| `mapConst` axiom | Indexed-signature `Functor` workaround in `Effects.Core.SigUtil` |
+| `interpret_bind` gaps | Proven: State, Reader, Writer, Exception, Sum, Product. `sorry`: Nondet `choice` in `NondetT.runFree_bind` (target lemma: `append_concatMap_runFree` via `mapM_flatten_append_bind` + mutual prefix/concat lemmas) |
+| `mapConst` axiom | Required for indexed signatures (State/Reader/Writer): `Functor.map` cannot be defined when operation indices vary (`get : StateSig σ σ`, `put : StateSig σ PUnit`, etc.). Axiom lives in `Effects.Core.SigUtil`. |
 | Combo integration tests | `tests/Tests/Combo/*` exist but are not wired into the `Tests` aggregator yet |
 
 ## Upstream PR order
