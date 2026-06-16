@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://fraware.github.io/lean-effects/</loc>
+         <lastmod>2026-06-16</lastmod>
+    </url>
+    <url>
+         <loc>https://fraware.github.io/lean-effects/contributing/</loc>
+         <lastmod>2026-06-16</lastmod>
+    </url>
+    <url>
+         <loc>https://fraware.github.io/lean-effects/api/core/</loc>
+         <lastmod>2026-06-16</lastmod>
+    </url>
+    <url>
+         <loc>https://fraware.github.io/lean-effects/cookbook/common-patterns/</loc>
+         <lastmod>2026-06-16</lastmod>
+    </url>
+    <url>
+         <loc>https://fraware.github.io/lean-effects/getting-started/basic-usage/</loc>
+         <lastmod>2026-06-16</lastmod>
+    </url>
+    <url>
+         <loc>https://fraware.github.io/lean-effects/getting-started/first-example/</loc>
+         <lastmod>2026-06-16</lastmod>
+    </url>
+    <url>
+         <loc>https://fraware.github.io/lean-effects/getting-started/installation/</loc>
+         <lastmod>2026-06-16</lastmod>
+    </url>
+    <url>
+         <loc>https://fraware.github.io/lean-effects/reference/dsl-reference/</loc>
+         <lastmod>2026-06-16</lastmod>
+    </url>
+</urlset>
