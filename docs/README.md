@@ -2,7 +2,7 @@
 
 This folder is the MkDocs project root (`docs_dir: .` in `mkdocs.yml`).
 
-- Start page: [index.md](index.md)
+- Start page: [index.md](pages/index.md)
 - Build: `pip install -r requirements.txt`, then `mkdocs build` (output in `_site/`)
 - On GitHub, the Documentation workflow runs Lean builds, doc helpers, then MkDocs
 
