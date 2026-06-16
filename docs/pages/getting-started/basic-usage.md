@@ -112,5 +112,5 @@ Sum and product constructions are in [`Effects.Compose.Sum`](https://github.com/
 ## Next Steps
 
 - [First Example](first-example.md) - A complete working example
-- [DSL Reference](reference/dsl-reference.md) - Complete syntax reference
-- [Common Patterns](cookbook/common-patterns.md) - Real-world usage patterns
+- [DSL Reference](../reference/dsl-reference.md) - Complete syntax reference
+- [Common Patterns](../cookbook/common-patterns.md) - Real-world usage patterns

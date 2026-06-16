@@ -120,9 +120,9 @@ class DocValidator:
         # Check for required files
         required_files = [
             "README.md",
-            "reference/dsl-reference.md",
-            "api/core.md",
-            "cookbook/common-patterns.md",
+            "pages/reference/dsl-reference.md",
+            "pages/api/core.md",
+            "pages/cookbook/common-patterns.md",
         ]
 
         for file_path in required_files:
@@ -176,6 +176,13 @@ class DocValidator:
             # Check for malformed links
             if "](" in line and not re.search(r"\[[^\]]+\]\([^)]+\)", line):
                 self.warnings.append(f"Malformed link in {file_path}:{i}")
+
+
+    def is_valid_lean_syntax(self, code: str) -> bool:
+        """Lightweight sanity check for Lean example blocks."""
+        if not code.strip():
+            return True
+        return code.count("(") == code.count(")")
 
     def is_valid_url(self, url: str) -> bool:
         """Check if URL is well-formed."""

@@ -2,7 +2,7 @@
 import Effects
 
 -- Version: keep in sync with [VERSION](VERSION) and release tags.
-def version : String := (include_str "VERSION").trim
+def version : String := (include_str "VERSION").trimAscii.toString
 
 -- Help text
 def helpText : String :=
@@ -109,7 +109,7 @@ def runExamples : IO Unit := do
 def main (args : List String) : IO Unit := do
   match args with
   | [] =>
-    IO.println "lean-effects v" ++ version
+    IO.println ("lean-effects v" ++ version)
     IO.println "Run 'lean-effects --help' for usage information"
   | ["help"] | ["--help"] | ["-h"] =>
     IO.println helpText

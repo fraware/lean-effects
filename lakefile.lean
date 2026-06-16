@@ -5,7 +5,7 @@ package «lean-effects» where
   -- add package configuration options here
 
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "v4.16.0"
+  "https://github.com/leanprover-community/mathlib4.git" @ "v4.31.0-rc1"
 
 @[default_target]
 lean_lib «Effects» where
@@ -20,7 +20,6 @@ lean_exe «lean-effects» where
   root := `Main
   supportInterpreter := true
 
-@[default_target]
 lean_exe «Bench» where
   root := `Benchmarks
   srcDir := "bench"

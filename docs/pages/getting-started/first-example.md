@@ -185,6 +185,6 @@ def testCalculator : IO Unit := do
 
 ## Next Steps
 
-- Explore the [Standard Library](api/state.md) for more effects
-- Learn about [Common Patterns](cookbook/common-patterns.md)
-- Check out [Performance Tips](cookbook/performance.md)
+- Explore the [Standard Library](../api/core.md) for more effects
+- Learn about [Common Patterns](../cookbook/common-patterns.md)
+- Check out [Performance Tips](../cookbook/common-patterns.md)

@@ -25,7 +25,7 @@ COPY lean-toolchain .
 RUN elan install $(cat lean-toolchain) && elan default $(cat lean-toolchain)
 
 # Copy Lake configuration
-COPY Lakefile.lean lake-manifest.json ./
+COPY lakefile.lean lake-manifest.json ./
 
 # Optional: pass GITHUB_TOKEN at build time for Lake (e.g. ProofWidgets release fetch)
 ARG GITHUB_TOKEN=

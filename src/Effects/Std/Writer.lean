@@ -1,123 +1,87 @@
 -- Writer effect theory and implementation
+import Mathlib.Algebra.Group.Defs
 import Effects.Core.Free
 import Effects.Core.Handler
-import Effects.Core.Fusion
-import Effects.DSL.Syntax
-import Lean
+import Effects.Core.SigUtil
 
 namespace Effects.Std
 
--- Writer effect signature - operations for writing to log
-inductive WriterSig (ω : Type u) (α : Type u) where
-  | tell : ω → WriterSig ω α
+open Effects.Core
 
--- Functor instance for WriterSig
-instance {ω : Type u} : Functor (WriterSig ω) where
-  map f := fun m => match m with
-    | .tell w => .tell w
+universe u
 
--- Writer theory definition for the bundled DSL
-def WriterTheory (ω : Type u) [Monoid ω] : Theory where
-  name := "Writer"
-  params := [⟨"ω", "Type u"⟩]
-  ops := [
-    ⟨"tell", Ty.param "ω", Ty.unit⟩
-  ]
-  eqns := []
+inductive WriterSig (Chunk : Type u) : Type u → Type u where
+  | tell : Chunk → WriterSig Chunk PUnit
 
--- Free monad for Writer effect
-def Writer.Free (ω α : Type u) : Type u :=
-  FreeMonad (WriterSig ω) α
+noncomputable instance {Chunk : Type u} : Functor (WriterSig Chunk) where
+  map f x := mapConst f x
 
--- Writer operations
-def Writer.tell (ω : Type u) (w : ω) : Writer.Free ω Unit :=
-  .impure (.tell w) (fun _ => .pure ())
+abbrev Writer.Free (Chunk : Type u) (α : Type u) : Type (u + 1) :=
+  FreeMonad (WriterSig Chunk) α
 
--- WriterT monad transformer
-def WriterT (ω : Type u) (M : Type u → Type u) [Monad M] (α : Type u) : Type u :=
-  M (α × ω)
+def Writer.tell (Chunk : Type u) (w : Chunk) : Writer.Free Chunk PUnit :=
+  FreeMonad.impure PUnit (WriterSig.tell w) (fun _ => FreeMonad.pure PUnit.unit)
 
--- Monad instance for WriterT
-instance [Monad M] : Monad (WriterT ω M) where
-  pure x := pure (x, 1)
-  bind m f := do
-    let (x, w) ← m
-    let (y, w') ← f x
-    pure (y, w * w')
+def WriterT (Chunk : Type u) (M : Type u → Type u) [Monad M] (α : Type u) : Type u :=
+  M (α × Chunk)
 
--- Writer handler implementation - properly completed
-instance [Monad M] : Handler (WriterSig ω) (WriterT ω M) where
-  interpret := fun m => match m with
-    | .pure x => pure (x, 1)
-    | .impure fx k => match fx with
-      | .tell w => k () >>= fun (x, w') => pure (x, w * w')
-  interpret_pure := by simp
-  interpret_bind := by
-    intro m f
-    induction m with
-    | pure x => simp
-    | impure fx k ih =>
-      simp
-      cases fx with
-      | tell w => simp; congr 1; ext y; exact ih y
+instance {Chunk : Type u} {M : Type u → Type u} [Monoid Chunk] [Monad M] : Monad (WriterT Chunk M) where
+  pure {α} x := @monadPure M _ (α × Chunk) (x, 1)
+  bind {α β} m f :=
+    @monadBind M _ (α × Chunk) (β × Chunk) m fun (x, w) =>
+      @monadBind M _ (β × Chunk) (β × Chunk) (f x) fun (y, w') =>
+        @monadPure M _ (β × Chunk) (y, w * w')
 
--- Writer operation interpretation
-def Writer.interpretOp {ω α : Type u} [Monoid ω] [Monad M] (fx : WriterSig ω α) : M (α × ω) :=
-  match fx with
-  | .tell w => pure ((), w)
+def WriterT.runFree {Chunk : Type u} {M : Type u → Type u} [Monoid Chunk] [Monad M] {α : Type u}
+    (m : FreeMonad (WriterSig Chunk) α) : WriterT Chunk M α :=
+  match m with
+  | .pure x => @monadPure M _ (α × Chunk) (x, 1)
+  | .impure _ (WriterSig.tell w) k =>
+    @monadBind M _ (α × Chunk) (α × Chunk) (WriterT.runFree (k PUnit.unit)) fun (x, w') =>
+      @monadPure M _ (α × Chunk) (x, w * w')
 
--- Writer handler laws
-theorem writer_handler_pure [Monad M] (x : α) :
-  interpret (pure x : Writer.Free ω α) = pure x := by
-  simp [Handler.interpret_pure]
-
-theorem writer_handler_bind [Monad M] (m : Writer.Free ω α) (f : α → Writer.Free ω β) :
-  interpret (bind m f) = bind (interpret m) (fun x => interpret (f x)) := by
-  simp [Handler.interpret_bind]
-
--- Writer fusion theorems
-theorem writer_fusion [Monad M] [Monad N] (h : M α → N α) :
-  h ∘ interpret = interpret ∘ (h <$> ·) := by
-  ext m
-  simp [interpret]
+@[simp]
+theorem WriterT.runFree_bind {Chunk : Type u} {M : Type u → Type u} [Monoid Chunk] [Monad M] [LawfulMonad M] {α β : Type u}
+    (m : Writer.Free Chunk α) (f : α → Writer.Free Chunk β) :
+    WriterT.runFree (FreeMonad.bind m f) =
+      @monadBind M _ (α × Chunk) (β × Chunk) (WriterT.runFree m) fun (x, w) =>
+        @monadBind M _ (β × Chunk) (β × Chunk) (WriterT.runFree (f x)) fun (y, w') =>
+          @monadPure M _ (β × Chunk) (y, w * w') := by
   induction m with
-  | pure x => simp [Handler.interpret_pure]
-  | impure fx k ih =>
-    simp [Handler.interpret_bind]
-    cases fx with
-    | tell w => simp; congr 1; ext y; exact ih y
+  | pure x => simp [WriterT.runFree, monadBind, monadPure, bind, monad_pure_bind, FreeMonad.bind]
+  | impure _ op k ih =>
+    cases op with
+    | tell w =>
+      simp only [WriterT.runFree, FreeMonad.bind]
+      suffices h :
+          WriterT.runFree (FreeMonad.bind (k PUnit.unit) f) =
+            @monadBind M _ (α × Chunk) (β × Chunk) (WriterT.runFree (k PUnit.unit)) fun (p : α × Chunk) =>
+              @monadBind M _ (β × Chunk) (β × Chunk) (WriterT.runFree (f p.1)) fun (q : β × Chunk) =>
+                @monadPure M _ (β × Chunk) (q.1, p.2 * q.2) by
+        rw [h]
+        simp only [monadBind, monadPure, bind, LawfulMonad.bind_assoc, LawfulMonad.pure_bind]
+        congr 1
+        funext x₀w₀
+        rcases x₀w₀ with ⟨x₀, w₀⟩
+        congr 1
+        funext yw'
+        rcases yw' with ⟨y, w'⟩
+        simp [mul_assoc]
+      simpa using ih PUnit.unit
 
--- Writer simplification lemmas
-@[simp]
-theorem writer_pure_bind [Monad M] (x : α) (f : α → Writer.Free ω β) :
-  bind (pure x : Writer.Free ω α) f = f x := by
-  simp [bind, FreeMonad.pure_bind]
+instance {Chunk : Type u} {M : Type u → Type u} [Monoid Chunk] [Monad M] [LawfulMonad M] :
+    Handler (WriterSig Chunk) (WriterT Chunk M) where
+  interpret := WriterT.runFree
+  interpret_pure := fun {α} x => rfl
+  interpret_bind := WriterT.runFree_bind
 
-@[simp]
-theorem writer_bind_pure [Monad M] (m : Writer.Free ω α) :
-  bind m pure = m := by
-  simp [bind, FreeMonad.bind_pure]
+def Writer.run {Chunk : Type u} {α : Type u} [Monoid Chunk] (m : Writer.Free Chunk α) : α × Chunk :=
+  WriterT.runFree (M := Id) m
 
-@[simp]
-theorem writer_bind_assoc [Monad M] (m : Writer.Free ω α) (f : α → Writer.Free ω β) (g : β → Writer.Free ω γ) :
-  bind (bind m f) g = bind m (fun x => bind (f x) g) := by
-  simp [bind, FreeMonad.bind_assoc]
-
--- Writer run function
-def Writer.run (m : Writer.Free ω α) : α × ω :=
-  let handler := interpret m (M := Id)
-  handler
-
--- Writer eval function (returns only the value)
-def Writer.eval (m : Writer.Free ω α) : α :=
+def Writer.eval {Chunk : Type u} {α : Type u} [Monoid Chunk] (m : Writer.Free Chunk α) : α :=
   (Writer.run m).1
 
--- Writer exec function (returns only the log)
-def Writer.exec (m : Writer.Free ω α) : ω :=
+def Writer.exec {Chunk : Type u} {α : Type u} [Monoid Chunk] (m : Writer.Free Chunk α) : Chunk :=
   (Writer.run m).2
-
--- Export the main Writer functionality
-export Writer (tell run eval exec)
-export Writer.Free
 
 end Effects.Std
