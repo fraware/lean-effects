@@ -5,8 +5,8 @@ site_url: https://fraware.github.io/lean-effects
 repo_url: https://github.com/fraware/lean-effects
 repo_name: fraware/lean-effects
 
-docs_dir: docs
-site_dir: site
+docs_dir: pages
+site_dir: _site
 
 theme:
   name: material
