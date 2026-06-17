@@ -187,7 +187,7 @@ flowchart LR
 
 ### Known proof debt
 
-- One tracked `sorry` in `Effects.Std.Nondet` (`NondetT.runFree_bind` choice case); CI rejects any other `sorry` in `src/`.
+- No `sorry` in `src/`; one intentional `mapConst` axiom in `Effects.Core.SigUtil` for indexed signatures.
 - One `axiom mapConst` in `Effects.Core.SigUtil` for indexed operation signatures. See [`docs/EXTRACTION_LEDGER.md`](docs/EXTRACTION_LEDGER.md).
 
 ### Windows native link
@@ -204,7 +204,7 @@ Executables (`lake exe lean-effects`, `lake exe test-suite`) need a C compiler. 
 | **Extra executable checks** | `lake exe test-suite` |
 | **Benchmarks** | `lake exe Bench` · `lake exe performance-monitor` |
 
-Continuous integration builds `Effects` and `Tests` on Linux, runs executable checks, and refuses new `sorry` in `src/` (except the tracked gap in `Effects.Std.Nondet`). Dependency versions are set in [`lakefile.lean`](lakefile.lean) and [`lean-toolchain`](lean-toolchain) (`v4.31.0-rc1`).
+Continuous integration builds `Effects` and `Tests` on Linux, runs executable checks, and refuses any `sorry` in `src/`. Dependency versions are set in [`lakefile.lean`](lakefile.lean) and [`lean-toolchain`](lean-toolchain) (`v4.31.0`).
 
 ---
 

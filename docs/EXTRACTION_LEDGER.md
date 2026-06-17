@@ -15,7 +15,11 @@ Tracks what is ready for CSLib upstream versus what remains repository-local dur
 | Reader example (`ask` / `local` / `run`) | `Effects.Std.Reader` | Candidate |
 | Writer example (`tell` / `run`) | `Effects.Std.Writer` | Candidate |
 | Sum / product composition | `Effects.Compose.Sum`, `Effects.Compose.Product` | Candidate |
-| Nondet example (`empty` / `choice` / `run`) | `Effects.Std.Nondet` | Candidate (runtime; `NondetT.runFree_bind` choice case still `sorry`) |
+| Nondet example (`empty` / `choice` / `run`) | `Effects.Std.Nondet` | Candidate |
+
+## CSLib no-sorry gate
+
+Continuous integration runs [`scripts/check-no-sorry.sh`](../scripts/check-no-sorry.sh) on the stable extraction modules listed above (including Nondet). DSL, Automation, Fusion, and SigUtil are outside that gate.
 
 ## Postponed
 
@@ -25,7 +29,7 @@ Tracks what is ready for CSLib upstream versus what remains repository-local dur
 | DSL extraction | `Effects.DSL` (syntax, elaboration, `derive_effect`) stays local |
 | Tactics | `effect_fuse!`, `handler_laws!`, `local_simp!` not upstreamed this sprint; macro-based stubs build on 4.31 |
 | Scripts | Performance monitor, coverage, release builder, doc generator |
-| `interpret_bind` gaps | Proven: State, Reader, Writer, Exception, Sum, Product. `sorry`: Nondet `choice` in `NondetT.runFree_bind` (target lemma: `append_concatMap_runFree` via `mapM_flatten_append_bind` + mutual prefix/concat lemmas) |
+| `interpret_bind` gaps | Closed: State, Reader, Writer, Exception, Nondet, Sum, Product |
 | `mapConst` axiom | Required for indexed signatures (State/Reader/Writer): `Functor.map` cannot be defined when operation indices vary (`get : StateSig σ σ`, `put : StateSig σ PUnit`, etc.). Axiom lives in `Effects.Core.SigUtil`. |
 | Combo integration tests | `tests/Tests/Combo/*` exist but are not wired into the `Tests` aggregator yet |
 
@@ -53,5 +57,5 @@ import Effects.Automation   -- optional: tactics
 
 ## Build notes (Lean 4.31)
 
-- Libraries: `lake build Effects` and `lake build Tests` succeed on 4.31.0-rc1 with mathlib `v4.31.0-rc1`.
+- Libraries: `lake build Effects` and `lake build Tests` succeed on 4.31.0 with mathlib `v4.31.0`.
 - Executables (`lake exe lean-effects`, `lake exe test-suite`) require a C toolchain; on Windows set `LEAN_CC` to `clang` (or another installed compiler) if `cc` is not on `PATH`.

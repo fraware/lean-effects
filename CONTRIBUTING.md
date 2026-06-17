@@ -4,8 +4,8 @@
 
 Lean and Mathlib versions are fixed together:
 
-- [`lean-toolchain`](lean-toolchain) — version elan should use for this repo (`v4.31.0-rc1`).
-- [`lakefile.lean`](lakefile.lean) — Mathlib dependency at a matching tag (`v4.31.0-rc1`).
+- [`lean-toolchain`](lean-toolchain) — version elan should use for this repo (`v4.31.0`).
+- [`lakefile.lean`](lakefile.lean) — Mathlib dependency at a matching tag (`v4.31.0`).
 
 If you change either, run `lake update` and commit the updated [`lake-manifest.json`](lake-manifest.json).
 
@@ -47,11 +47,22 @@ lake exe build-release
 
 ### Windows native link
 
-Executables require a C compiler. If linking fails with `cc` not found, set `LEAN_CC` to an installed compiler (for example `clang`) before running `lake exe …`.
+Executables (`lake exe lean-effects`, `lake exe test-suite`) need a C compiler. On Windows, linking may fail when the default toolchain passes GNU-style linker flags to LLVM `clang` (for example `-no-pie`). Set `LEAN_CC` to an installed compiler before running `lake exe …`:
+
+```powershell
+$env:LEAN_CC = "clang"
+lake exe test-suite
+```
+
+Library builds (`lake build Effects`, `lake build Tests`) do not require a separate C compiler. Continuous integration treats Windows executable checks as non-blocking; Linux CI runs them as part of the main build job.
 
 ## Standards
 
-- Do not add `sorry` in [`src/`](src/). Continuous integration rejects new uses under `src/` except the single tracked gap in [`Effects.Std.Nondet`](src/Effects/Std/Nondet.lean).
+- **CSLib candidate modules** must not contain `sorry`. The list is enforced by [`scripts/check-no-sorry.sh`](scripts/check-no-sorry.sh):
+  - `Effects.Core.Free`, `Effects.Core.Handler`
+  - `Effects.Std.State`, `Effects.Std.Exception`, `Effects.Std.Reader`, `Effects.Std.Writer`
+  - `Effects.Compose.Sum`, `Effects.Compose.Product`
+- Do not add `sorry` in [`src/`](src/). Continuous integration rejects any `sorry` under `src/`.
 - The `mapConst` axiom in [`Effects.Core.SigUtil`](src/Effects/Core/SigUtil.lean) is intentional for indexed signatures; document any change in [`docs/EXTRACTION_LEDGER.md`](docs/EXTRACTION_LEDGER.md).
 - Prefer small Mathlib imports where you can. Document public APIs in source when behavior is not obvious.
 - Follow existing naming, layout, and proof style in files you touch.

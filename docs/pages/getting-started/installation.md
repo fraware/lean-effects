@@ -3,11 +3,11 @@
 ## Prerequisites
 
 - **Git**
-- **[elan](https://github.com/leanprover/elan)** (recommended) so Lean matches [`lean-toolchain`](https://github.com/fraware/lean-effects/blob/main/lean-toolchain) (`v4.31.0-rc1`)
+- **[elan](https://github.com/leanprover/elan)** (recommended) so Lean matches [`lean-toolchain`](https://github.com/fraware/lean-effects/blob/main/lean-toolchain) (`v4.31.0`)
 - **Python 3** (only to build the documentation site)
 - **C compiler** (only for executables: `lake exe lean-effects`, `lake exe test-suite`)
 
-The Lean version is the one named in `lean-toolchain`, with Mathlib at a compatible tag in [`lakefile.lean`](https://github.com/fraware/lean-effects/blob/main/lakefile.lean) (`v4.31.0-rc1`).
+The Lean version is the one named in `lean-toolchain`, with Mathlib at a compatible tag in [`lakefile.lean`](https://github.com/fraware/lean-effects/blob/main/lakefile.lean) (`v4.31.0`).
 
 ## Clone and build
 
@@ -61,12 +61,14 @@ Some steps fetch files from GitHub. If that fails (corporate network, Docker, an
 
 ### Native link / `cc` not found (Windows)
 
-Library builds (`lake build Effects`, `lake build Tests`) do not need a separate C compiler. Executables do. Set `LEAN_CC` to an installed compiler before running `lake exe …`, for example:
+Library builds (`lake build Effects`, `lake build Tests`) do not need a separate C compiler. Executables do. Linking may fail when LLVM `clang` receives GNU-style linker flags (for example `-no-pie`). Set `LEAN_CC` to an installed compiler before running `lake exe …`:
 
 ```powershell
 $env:LEAN_CC = "clang"
 lake exe test-suite
 ```
+
+Continuous integration builds Effects and Tests on Windows in a dedicated job; executable checks there are informational (non-blocking).
 
 ### TLS / certificates
 
