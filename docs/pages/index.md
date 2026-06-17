@@ -6,10 +6,20 @@
 
 Lean and Mathlib are locked to versions that work together:
 
-- [`lean-toolchain`](https://github.com/fraware/lean-effects/blob/main/lean-toolchain)
-- Mathlib in [`Lakefile.lean`](https://github.com/fraware/lean-effects/blob/main/Lakefile.lean)
+- [`lean-toolchain`](https://github.com/fraware/lean-effects/blob/main/lean-toolchain) — `leanprover/lean4:v4.31.0-rc1`
+- Mathlib in [`lakefile.lean`](https://github.com/fraware/lean-effects/blob/main/lakefile.lean) — `v4.31.0-rc1`
 
 [elan](https://github.com/leanprover/elan) is the usual way to match those versions locally.
+
+## Module layout
+
+| Layer | Import | Contents |
+|-------|--------|----------|
+| Stable core | `import Effects` | Core, Std, Compose (no DSL or tactics) |
+| DSL | `import Effects.DSL` | `theory`, `derive_effect`, elaboration |
+| Automation | `import Effects.Automation` | `effect_fuse!`, `handler_laws!`, `local_simp!` |
+
+See [Extraction ledger](https://github.com/fraware/lean-effects/blob/main/docs/EXTRACTION_LEDGER.md) for CSLib extraction scope and remaining proof debt (one `sorry` in Nondet, one `mapConst` axiom).
 
 ## Quick start
 
@@ -29,10 +39,13 @@ The library source is under [`src/Effects/`](https://github.com/fraware/lean-eff
 
 ## Building and testing
 
-- `lake build` — main library, tests, benchmarks, CLI, and scripts.
+- `lake build Effects` — stable library (Core, Std, Compose).
 - `lake build Tests` — all modules in [`tests/`](https://github.com/fraware/lean-effects/tree/main/tests) (entry: [`tests/Tests.lean`](https://github.com/fraware/lean-effects/blob/main/tests/Tests.lean)).
-- `lake exe test-suite` — optional extra checks.
+- `lake build` — full default targets including benchmarks, CLI, and scripts.
+- `lake exe test-suite` — optional extra checks (requires native linker).
 - `lake exe Bench` — benchmarks.
+
+Linux CI builds and tests the library on every push. Executable targets need a C compiler; on Windows set `LEAN_CC` if `cc` is not available.
 
 Documentation site: install [`requirements.txt`](https://github.com/fraware/lean-effects/blob/main/docs/requirements.txt), then from `docs/` run `mkdocs build` or `mkdocs serve`.
 
@@ -40,4 +53,4 @@ See [CONTRIBUTING.md](https://github.com/fraware/lean-effects/blob/main/CONTRIBU
 
 ## Editing these docs
 
-Add new `.md` files under `docs/` and list them in [`mkdocs.yml`](https://github.com/fraware/lean-effects/blob/main/docs/mkdocs.yml).
+Add new `.md` files under `docs/pages/` and list them in [`mkdocs.yml`](https://github.com/fraware/lean-effects/blob/main/docs/mkdocs.yml).

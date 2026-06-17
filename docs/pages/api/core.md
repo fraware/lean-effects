@@ -4,13 +4,17 @@ Overview of the main types and where they live. Open the linked `.lean` files fo
 
 ## Module graph
 
-| Area | Lean module | Role |
-|------|----------------|------|
-| Free monad | [`Effects.Core.Free`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Core/Free.lean) | `FreeMonad F` for a functor signature `F` |
-| Handlers | [`Effects.Core.Handler`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Core/Handler.lean) | `Handler F M` + `buildHandler`, `interpret` |
-| Fusion | [`Effects.Core.Fusion`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Core/Fusion.lean) | Fusion-style lemmas for handlers |
-| DSL | [`Effects.DSL.Syntax`](https://github.com/fraware/lean-effects/blob/main/src/Effects/DSL/Syntax.lean), [`Effects.DSL.Elab`](https://github.com/fraware/lean-effects/blob/main/src/Effects/DSL/Elab.lean) | `theory`, `derive_effect`, etc. |
-| Aggregate import | [`Effects`](https://github.com/fraware/lean-effects/blob/main/src/Effects.lean) | Re-exports for downstream projects |
+| Area | Lean module | In `import Effects`? | Role |
+|------|-------------|----------------------|------|
+| Free monad | [`Effects.Core.Free`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Core/Free.lean) | Yes | `FreeMonad F` for a functor signature `F` |
+| Handlers | [`Effects.Core.Handler`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Core/Handler.lean) | Yes | `Handler F M` + `buildHandler`, `interpret` |
+| Fusion | [`Effects.Core.Fusion`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Core/Fusion.lean) | Yes | Fusion-style lemmas for handlers |
+| Signatures | [`Effects.Core.SigUtil`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Core/SigUtil.lean) | Yes | `mapConst` axiom for indexed ops |
+| Std effects | [`Effects.Std`](https://github.com/fraware/lean-effects/tree/main/src/Effects/Std) | Yes | State, Reader, Writer, Exception, Nondet |
+| Composition | [`Effects.Compose`](https://github.com/fraware/lean-effects/tree/main/src/Effects/Compose) | Yes | Sum and product of signatures |
+| DSL | [`Effects.DSL`](https://github.com/fraware/lean-effects/tree/main/src/Effects/DSL) | No (`import Effects.DSL`) | `theory`, `derive_effect`, etc. |
+| Tactics | [`Effects.Automation`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Automation.lean) | No (`import Effects.Automation`) | `effect_fuse!`, `handler_laws!` |
+| Aggregate import | [`Effects`](https://github.com/fraware/lean-effects/blob/main/src/Effects.lean) | — | Stable re-exports (Core + Std + Compose) |
 
 ## Free monad
 
@@ -45,13 +49,13 @@ State, Reader, Writer, Exception, and Nondet live under [`Effects.Std`](https://
 - [`Reader.lean`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Std/Reader.lean)
 - [`Writer.lean`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Std/Writer.lean)
 - [`Exception.lean`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Std/Exception.lean)
-- [`Nondet.lean`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Std/Nondet.lean)
+- [`Nondet.lean`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Std/Nondet.lean) — one tracked `sorry` in `NondetT.runFree_bind` (choice case)
 
 Combining effects: [`Effects.Compose.Sum`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Compose/Sum.lean) and [`Effects.Compose.Product`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Compose/Product.lean).
 
 ## Tactics
 
-Tactics live under [`Effects.Tactics`](https://github.com/fraware/lean-effects/tree/main/src/Effects/Tactics) (for example [`EffectFuse.lean`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Tactics/EffectFuse.lean), [`HandlerLaws.lean`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Tactics/HandlerLaws.lean)) and are available through `import Effects` (see [`Effects.lean`](https://github.com/fraware/lean-effects/blob/main/src/Effects.lean)).
+Tactics live under [`Effects.Tactics`](https://github.com/fraware/lean-effects/tree/main/src/Effects/Tactics) and are re-exported by [`Effects.Automation`](https://github.com/fraware/lean-effects/blob/main/src/Effects/Automation.lean). Use `import Effects.Automation` (not `import Effects` alone).
 
 ## Telemetry
 
@@ -61,4 +65,5 @@ Tactics live under [`Effects.Tactics`](https://github.com/fraware/lean-effects/t
 
 - [DSL reference](../reference/dsl-reference.md) — user-facing syntax summary  
 - [Common patterns](../cookbook/common-patterns.md) — recipes and idioms  
+- [Extraction ledger](https://github.com/fraware/lean-effects/blob/main/docs/EXTRACTION_LEDGER.md) — CSLib scope and proof debt  
 - [Examples directory](https://github.com/fraware/lean-effects/tree/main/examples) — small runnable Lean files
