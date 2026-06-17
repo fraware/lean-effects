@@ -1,6 +1,4 @@
 -- Helpers for indexed effect signatures whose `Functor.map` only reindexes.
-import Lean
-
 namespace Effects.Core
 
 /--

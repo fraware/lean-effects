@@ -1,11 +1,11 @@
 # Documentation source
 
-This folder is the MkDocs project root (`docs_dir: .` in `mkdocs.yml`).
+MkDocs project root: [`mkdocs.yml`](mkdocs.yml) sets `docs_dir: pages` and `site_dir: _site`.
 
-- Start page: [index.md](pages/index.md)
-- Build: `pip install -r requirements.txt`, then `mkdocs build` (output in `_site/`)
+- Start page: [pages/index.md](pages/index.md)
+- Build: `pip install -r requirements.txt`, then `mkdocs build` from this directory (output in `_site/`)
 - On GitHub, the Documentation workflow runs Lean builds, doc helpers, then MkDocs
 
-Keep [`mkdocs.yml`](mkdocs.yml) navigation in sync with files you add or rename.
+Add or rename pages under `pages/` and list them in `mkdocs.yml` navigation.
 
-Repository-wide notes: [CONTRIBUTING.md](../CONTRIBUTING.md), [README.md](../README.md).
+Repository-wide notes: [CONTRIBUTING.md](../CONTRIBUTING.md), [README.md](../README.md), [EXTRACTION_LEDGER.md](EXTRACTION_LEDGER.md).

@@ -1,7 +1,7 @@
 # Basic Usage
 
 !!! note "Snippets"
-    The `theory` / `derive_effect` examples are sketches. For code that matches this repo exactly, use [`examples/BasicExample.lean`](https://github.com/fraware/lean-effects/blob/main/examples/BasicExample.lean) and `import Effects`.
+    The `theory` / `derive_effect` examples are sketches. For code that matches this repo exactly, use [`examples/BasicExample.lean`](https://github.com/fraware/lean-effects/blob/main/examples/BasicExample.lean) (`import Effects.DSL` + `Effects.Automation`) or [`examples/StateExample.lean`](https://github.com/fraware/lean-effects/blob/main/examples/StateExample.lean) (stable `import Effects` only).
 
 ## Introduction
 
