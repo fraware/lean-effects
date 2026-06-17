@@ -122,7 +122,7 @@ lake exe lean-effects --help
 |------|------------|
 | 1 | Install [elan](https://github.com/leanprover/elan) and open this repo so the `lean-toolchain` file is used. |
 | 2 | Run `lake update`. If downloads fail (e.g. in Docker), see [CONTRIBUTING](CONTRIBUTING.md). |
-| 3 | Run `lake build` to compile the library, tests, benchmarks, CLI, and helper programs. |
+| 3 | Run `lake build Effects` and `lake build Tests` (or `lake build` for everything including benchmarks and CLI). |
 
 Optional: `make help` for more targets.
 
@@ -161,27 +161,38 @@ derive_effect Counter [free, handler, fusion, simp]
 
 ```mermaid
 flowchart LR
-  subgraph input [Spec]
-    T[Theory ops plus laws]
+  subgraph stable [Stable import Effects]
+    C[Core Free Handler Fusion]
+    S[Std State Reader Writer Exception Nondet]
+    P[Compose Sum Product]
   end
-  subgraph gen [Generation]
-    F[FreeMonad]
-    H[Handler laws]
-    S[Simp plus tactics]
+  subgraph optional [Optional imports]
+    D[DSL theory derive_effect]
+    A[Automation tactics]
   end
-  subgraph use [Use]
-    P[Programs]
-    R[Reasoning]
-  end
-  T --> F
-  T --> H
-  F --> P
-  H --> P
-  H --> S
-  S --> R
+  C --> S
+  C --> P
+  D --> A
 ```
 
-You specify a theory, get a free monad and handler story, then use simp and tactics to prove the properties you care about.
+| Layer | Module | In `import Effects`? |
+|-------|--------|----------------------|
+| Core | `Effects.Core.*` | Yes — free monad, handlers, fusion |
+| Std | `Effects.Std.*` | Yes — standard effects |
+| Compose | `Effects.Compose.*` | Yes — sum and product |
+| DSL | `Effects.DSL` | No — `import Effects.DSL` |
+| Automation | `Effects.Automation` | No — `import Effects.Automation` |
+
+`import Effects` is the CSLib-facing surface: core semantics and standard effects without DSL elaboration or tactics. For custom theories use `import Effects.DSL`; for `effect_fuse!` and related tactics use `import Effects.Automation`.
+
+### Known proof debt
+
+- One tracked `sorry` in `Effects.Std.Nondet` (`NondetT.runFree_bind` choice case); CI rejects any other `sorry` in `src/`.
+- One `axiom mapConst` in `Effects.Core.SigUtil` for indexed operation signatures. See [`docs/EXTRACTION_LEDGER.md`](docs/EXTRACTION_LEDGER.md).
+
+### Windows native link
+
+Executables (`lake exe lean-effects`, `lake exe test-suite`) need a C compiler. On Windows, set `LEAN_CC=clang` (or another installed compiler) if `cc` is not on PATH. Linux CI builds library and tests without issue.
 
 ---
 
@@ -193,7 +204,7 @@ You specify a theory, get a free monad and handler story, then use simp and tact
 | **Extra executable checks** | `lake exe test-suite` |
 | **Benchmarks** | `lake exe Bench` · `lake exe performance-monitor` |
 
-Continuous integration builds the project, runs those checks, and refuses new `sorry` in `src/`. Dependency versions are set in [`Lakefile.lean`](Lakefile.lean).
+Continuous integration builds `Effects` and `Tests` on Linux, runs executable checks, and refuses new `sorry` in `src/` (except the tracked gap in `Effects.Std.Nondet`). Dependency versions are set in [`lakefile.lean`](lakefile.lean) and [`lean-toolchain`](lean-toolchain) (`v4.31.0-rc1`).
 
 ---
 
@@ -214,11 +225,12 @@ Continuous integration builds the project, runs those checks, and refuses new `s
 
 | | |
 |:---|:---|
-| [Installation](docs/getting-started/installation.md) | Clone, build, common issues |
-| [Basic usage](docs/getting-started/basic-usage.md) | Concepts and snippets |
-| [DSL reference](docs/reference/dsl-reference.md) | Syntax |
-| [Core API](docs/api/core.md) | Where the main types live |
-| [Cookbook](docs/cookbook/common-patterns.md) | Patterns |
+| [Installation](docs/pages/getting-started/installation.md) | Clone, build, common issues |
+| [Basic usage](docs/pages/getting-started/basic-usage.md) | Concepts and snippets |
+| [DSL reference](docs/pages/reference/dsl-reference.md) | Syntax |
+| [Core API](docs/pages/api/core.md) | Where the main types live |
+| [Cookbook](docs/pages/cookbook/common-patterns.md) | Patterns |
+| [Extraction ledger](docs/EXTRACTION_LEDGER.md) | CSLib scope and proof debt |
 
 Local site: `pip install -r docs/requirements.txt`, then `cd docs && mkdocs serve`.
 

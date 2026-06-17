@@ -4,18 +4,29 @@
 
 Lean and Mathlib versions are fixed together:
 
-- [`lean-toolchain`](lean-toolchain) — version elan should use for this repo.
-- [`Lakefile.lean`](Lakefile.lean) — Mathlib dependency at a matching tag.
+- [`lean-toolchain`](lean-toolchain) — version elan should use for this repo (`v4.31.0-rc1`).
+- [`lakefile.lean`](lakefile.lean) — Mathlib dependency at a matching tag (`v4.31.0-rc1`).
 
 If you change either, run `lake update` and commit the updated [`lake-manifest.json`](lake-manifest.json).
+
+## Module imports
+
+| Goal | Import |
+|------|--------|
+| Core + standard effects + composition | `import Effects` |
+| DSL (`theory`, `derive_effect`) | `import Effects.DSL` |
+| Tactics (`effect_fuse!`, etc.) | `import Effects.Automation` |
+
+`import Effects` does not load DSL elaboration or tactics.
 
 ## Build and test
 
 ```bash
-lake build
+lake build Effects
+lake build Tests
 ```
 
-That builds the main library, tests under [`tests/`](tests) (via the `Tests` target), benchmarks, the command-line tool, and helper programs in [`scripts/`](scripts).
+Or `lake build` for the full default target set (library, tests, benchmarks, CLI, and scripts).
 
 All test modules are pulled in through [`tests/Tests.lean`](tests/Tests.lean).
 
@@ -34,9 +45,14 @@ lake exe generate-docs
 lake exe build-release
 ```
 
+### Windows native link
+
+Executables require a C compiler. If linking fails with `cc` not found, set `LEAN_CC` to an installed compiler (for example `clang`) before running `lake exe …`.
+
 ## Standards
 
-- Do not add `sorry` in [`src/`](src/). Continuous integration rejects new uses under `src/`.
+- Do not add `sorry` in [`src/`](src/). Continuous integration rejects new uses under `src/` except the single tracked gap in [`Effects.Std.Nondet`](src/Effects/Std/Nondet.lean).
+- The `mapConst` axiom in [`Effects.Core.SigUtil`](src/Effects/Core/SigUtil.lean) is intentional for indexed signatures; document any change in [`docs/EXTRACTION_LEDGER.md`](docs/EXTRACTION_LEDGER.md).
 - Prefer small Mathlib imports where you can. Document public APIs in source when behavior is not obvious.
 - Follow existing naming, layout, and proof style in files you touch.
 
@@ -63,7 +79,7 @@ docker build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN -t lean-effects:local .
 
 ## Documentation site
 
-Sources are in [`docs/`](docs). The table of contents is [`docs/mkdocs.yml`](docs/mkdocs.yml): every listed page must exist or `mkdocs build` errors.
+Sources are in [`docs/`](docs). MkDocs pages live under [`docs/pages/`](docs/pages/); the table of contents is [`docs/mkdocs.yml`](docs/mkdocs.yml).
 
 ```bash
 pip install -r docs/requirements.txt
