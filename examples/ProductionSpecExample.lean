@@ -37,9 +37,9 @@ def writerExample : Writer.Free String Nat := do
   Writer.tell String "world"
   pure 42
 
--- Example 6: Use the Nondet effect
-def nondetExample : Nondet.Free Nat := do
-  Nondet.choice (pure 1) (pure 2)
+-- Example 6: Use the Nondet effect (`choice` takes two plain values, not sub-computations)
+def nondetExample : Nondet.Free Nat :=
+  Nondet.choice 1 2
 
 -- Example 7: Demonstrate effect composition (conceptual)
 -- In the full implementation, this would use SumTheory and ProductTheory
