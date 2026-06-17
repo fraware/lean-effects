@@ -48,10 +48,13 @@ jobs:
       - name: Build (Effects, Tests, Bench, CLI, tooling)
         run: lake build
 
+      - name: No sorry in CSLib candidate modules
+        run: bash scripts/check-no-sorry.sh
+
       - name: No sorry in library sources
         run: |
-          if grep -RInE --include='*.lean' '\bsorry\b' src/ | grep -v 'Effects/Std/Nondet.lean'; then
-            echo "::error::Found sorry in src/ (outside tracked Nondet gap)"
+          if grep -RInE --include='*.lean' '\bsorry\b' src/; then
+            echo "::error::Found sorry in src/"
             exit 1
           fi
 
@@ -77,3 +80,49 @@ jobs:
         with:
           files: ./coverage/lcov.info
           fail_ci_if_error: false
+
+  windows:
+    name: Windows library build
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install elan
+        shell: bash
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Select Lean toolchain
+        shell: bash
+        run: |
+          elan install "$(cat lean-toolchain)"
+          elan default "$(cat lean-toolchain)"
+
+      - name: Cache Lake build
+        uses: actions/cache@v4
+        with:
+          path: |
+            .lake
+          key: ${{ runner.os }}-lake-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}
+          restore-keys: |
+            ${{ runner.os }}-lake-
+
+      - name: Build Effects and Tests
+        shell: bash
+        run: |
+          lake build Effects
+          lake build Tests
+
+      - name: No sorry in CSLib candidate modules
+        shell: bash
+        run: bash scripts/check-no-sorry.sh
+
+      - name: Run test-suite executable (non-blocking)
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          Write-Host "Windows executables may fail without a compatible C linker (LLVM clang vs GNU ld flags)."
+          Write-Host "Set LEAN_CC to clang or another installed compiler if linking fails."
+          lake exe test-suite
