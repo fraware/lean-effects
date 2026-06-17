@@ -1,6 +1,27 @@
--- Nondeterminism effect theory and implementation
 import Effects.Core.Free
 import Effects.Core.Handler
+import Effects.Std.Reader
+
+/-!
+# Nondeterminism (`Nondet`)
+
+`NondetT M α := M (List α)` interprets choice by appending result lists inside `M`.
+The handler law `interpret_bind` needs base-monad binds to commute when merging
+independent branches (`NondetT.runFree_bind`).
+
+## `BindCommute`
+
+`[BindCommute M]` is required for `Handler NondetSig (NondetT M)`.
+
+Lawful instances in this module:
+
+* `Id` and `Option` (at most one value; failure is unique for `Option`)
+* `ReaderT ρ M` when `[BindCommute M]` (environment is shared, no reordering cost)
+
+Bind generally does **not** commute for `List` (branch ordering), `State` / `Writer`
+(sequential effects), or `Except` (the leftmost error wins). Use `Nondet.run` / `NondetT Id`
+for bare list semantics, or a commutative base such as `ReaderT ρ Id`.
+-/
 
 namespace Effects.Std
 
@@ -8,7 +29,7 @@ open Effects.Core
 
 universe u
 
-/-- Monads whose effects commute, as required for nondeterministic choice. -/
+/-- Monads whose `bind` commutes, as required for the `NondetT` handler law. -/
 class BindCommute (M : Type u → Type u) [Monad M] where
   commute_bind_bind {α β γ : Type u} (ma : M α) (mb : M β) (k : α → β → M γ) :
     bind ma (fun a => bind mb (fun b => k a b)) =
@@ -20,6 +41,13 @@ instance : BindCommute Id where
 instance : BindCommute Option where
   commute_bind_bind ma mb k := by
     cases ma <;> cases mb <;> simp [bind]
+
+/-- Environment-passing monads inherit commutativity from the inner monad. -/
+instance {ρ : Type u} {M : Type u → Type u} [Monad M] [BindCommute M] :
+    BindCommute (ReaderT ρ M) where
+  commute_bind_bind ma mb k := by
+    funext r
+    exact BindCommute.commute_bind_bind (ma r) (mb r) (fun a b => k a b r)
 
 inductive NondetSig : Type u → Type u where
   | empty {α : Type u} : NondetSig α
@@ -99,11 +127,10 @@ private theorem bind_append_mapM_flatten {M : Type u → Type u} [Monad M] [Lawf
   intro ys
   have happend :
       (xs ++ ys).mapM g =
-        bind (xs.mapM g) (fun tx => bind (ys.mapM g) (fun ty => pure (tx ++ ty))) := by
-    simpa [bind, monadBind, monadPure] using
-      (List.mapM_append (l₁ := xs) (l₂ := ys) (f := g))
+        bind (xs.mapM g) (fun tx => bind (ys.mapM g) (fun ty => pure (tx ++ ty))) :=
+    List.mapM_append (l₁ := xs) (l₂ := ys) (f := g)
   rw [happend]
-  simp [bind, LawfulMonad.bind_assoc, LawfulMonad.pure_bind, List.flatten_append]
+  simp [List.flatten_append]
 
 @[simp]
 theorem NondetT.runFree_bind {M : Type u → Type u} [Monad M] [LawfulMonad M] [BindCommute M] {α β : Type u}

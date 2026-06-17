@@ -15,7 +15,7 @@ Tracks what is ready for CSLib upstream versus what remains repository-local dur
 | Reader example (`ask` / `local` / `run`) | `Effects.Std.Reader` | Candidate |
 | Writer example (`tell` / `run`) | `Effects.Std.Writer` | Candidate |
 | Sum / product composition | `Effects.Compose.Sum`, `Effects.Compose.Product` | Candidate |
-| Nondet example (`empty` / `choice` / `run`) | `Effects.Std.Nondet` | Candidate |
+| Nondet example (`empty` / `choice` / `run`) | `Effects.Std.Nondet` | Candidate; `BindCommute` on `Id`, `Option`, `ReaderT ρ M` |
 
 ## CSLib no-sorry gate
 
