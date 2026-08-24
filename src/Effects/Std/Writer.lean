@@ -48,26 +48,15 @@ theorem WriterT.runFree_bind {Chunk : Type u} {M : Type u → Type u} [Monoid Ch
         @monadBind M _ (β × Chunk) (β × Chunk) (WriterT.runFree (f x)) fun (y, w') =>
           @monadPure M _ (β × Chunk) (y, w * w') := by
   induction m with
-  | pure x => simp [WriterT.runFree, monadBind, monadPure, bind, monad_pure_bind, FreeMonad.bind]
+  | pure x =>
+      simp [WriterT.runFree, monadBind, monadPure, FreeMonad.bind,
+        LawfulMonad.pure_bind, LawfulMonad.bind_pure]
   | impure _ op k ih =>
     cases op with
     | tell w =>
       simp only [WriterT.runFree, FreeMonad.bind]
-      suffices h :
-          WriterT.runFree (FreeMonad.bind (k PUnit.unit) f) =
-            @monadBind M _ (α × Chunk) (β × Chunk) (WriterT.runFree (k PUnit.unit)) fun (p : α × Chunk) =>
-              @monadBind M _ (β × Chunk) (β × Chunk) (WriterT.runFree (f p.1)) fun (q : β × Chunk) =>
-                @monadPure M _ (β × Chunk) (q.1, p.2 * q.2) by
-        rw [h]
-        simp only [monadBind, monadPure, bind, LawfulMonad.bind_assoc, LawfulMonad.pure_bind]
-        congr 1
-        funext x₀w₀
-        rcases x₀w₀ with ⟨x₀, w₀⟩
-        congr 1
-        funext yw'
-        rcases yw' with ⟨y, w'⟩
-        simp [mul_assoc]
-      simpa using ih PUnit.unit
+      rw [ih PUnit.unit]
+      simp [monadBind, monadPure, LawfulMonad.bind_assoc, LawfulMonad.pure_bind, mul_assoc]
 
 instance {Chunk : Type u} {M : Type u → Type u} [Monoid Chunk] [Monad M] [LawfulMonad M] :
     Handler (WriterSig Chunk) (WriterT Chunk M) where
