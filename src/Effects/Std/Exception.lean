@@ -53,7 +53,8 @@ theorem ExceptionT.runFree_bind {ε : Type u} {M : Type u → Type u} [Monad M] 
       | throw e => simp [FreeMonad.bind, ExceptionT.runFree, monadBind, monadPure, bind]
   | impure _ op k =>
     cases op with
-    | throw e => simp [FreeMonad.bind, ExceptionT.runFree, monadBind, monadPure, bind]
+    | throw e =>
+      simp [FreeMonad.bind, ExceptionT.runFree, monadBind, monadPure, bind] <;> rfl
 
 instance {ε : Type u} {M : Type u → Type u} [Monad M] [LawfulMonad M] : Handler (ExceptionSig ε) (ExceptionT ε M) where
   interpret := ExceptionT.runFree
