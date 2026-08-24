@@ -41,9 +41,12 @@ jobs:
         with:
           path: |
             .lake
-          key: ${{ runner.os }}-lake-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}
+          key: ${{ runner.os }}-lake-${{ hashFiles('lean-toolchain', 'lakefile.lean', 'lake-manifest.json') }}
           restore-keys: |
             ${{ runner.os }}-lake-
+
+      - name: Refresh dependencies
+        run: lake update
 
       - name: Build (Effects, Tests, Bench, CLI, tooling)
         run: lake build
@@ -105,9 +108,13 @@ jobs:
         with:
           path: |
             .lake
-          key: ${{ runner.os }}-lake-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}
+          key: ${{ runner.os }}-lake-${{ hashFiles('lean-toolchain', 'lakefile.lean', 'lake-manifest.json') }}
           restore-keys: |
             ${{ runner.os }}-lake-
+
+      - name: Refresh dependencies
+        shell: bash
+        run: lake update
 
       - name: Build Effects and Tests
         shell: bash
