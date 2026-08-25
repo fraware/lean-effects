@@ -47,8 +47,9 @@ jobs:
         with:
           path: .lake
           key: ${{ runner.os }}-lake-docs-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}
-          restore-keys: |
-            ${{ runner.os }}-lake-docs-
+
+      - name: Refresh dependencies
+        run: lake update
 
       - name: Build project
         run: lake build
