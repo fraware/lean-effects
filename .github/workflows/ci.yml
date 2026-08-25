@@ -42,8 +42,6 @@ jobs:
           path: |
             .lake
           key: ${{ runner.os }}-lake-${{ hashFiles('lean-toolchain', 'lakefile.lean', 'lake-manifest.json') }}
-          restore-keys: |
-            ${{ runner.os }}-lake-
 
       - name: Refresh dependencies
         run: lake update
@@ -109,8 +107,6 @@ jobs:
           path: |
             .lake
           key: ${{ runner.os }}-lake-${{ hashFiles('lean-toolchain', 'lakefile.lean', 'lake-manifest.json') }}
-          restore-keys: |
-            ${{ runner.os }}-lake-
 
       - name: Refresh dependencies
         shell: bash
