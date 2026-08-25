@@ -49,13 +49,16 @@ theorem WriterT.runFree_bind {Chunk : Type u} {M : Type u → Type u} [Monoid Ch
           @monadPure M _ (β × Chunk) (y, w * w') := by
   induction m with
   | pure x =>
-      simp [WriterT.runFree, monadBind, monadPure, FreeMonad.bind]
+      change WriterT.runFree (f x) =
+        WriterT.runFree (f x) >>= fun p : β × Chunk => pure p
+      rw [bind_pure]
   | impure _ op k ih =>
     cases op with
     | tell w =>
       simp only [WriterT.runFree, FreeMonad.bind]
       rw [ih PUnit.unit]
-      simp [monadBind, monadPure, map_bind, bind_assoc, mul_assoc]
+      rw [map_eq_pure_bind]
+      simp only [LawfulMonad.bind_assoc, LawfulMonad.pure_bind, mul_assoc]
 
 instance {Chunk : Type u} {M : Type u → Type u} [Monoid Chunk] [Monad M] [LawfulMonad M] :
     Handler (WriterSig Chunk) (WriterT Chunk M) where
