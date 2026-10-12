@@ -5,9 +5,9 @@ import Lean
 import Lean.Elab.Command
 import Lean.Elab.Term
 import Lean.Meta
-import System.Platform
-import System.FilePath
-import Json
+import Init.System.Platform
+import Init.System.FilePath
+import Lean.Data.Json
 import Effects.Std.State
 import Effects.Std.Reader
 import Effects.Std.Writer
